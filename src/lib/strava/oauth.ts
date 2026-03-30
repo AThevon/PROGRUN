@@ -1,15 +1,22 @@
+import { randomUUID } from "crypto";
+
 const STRAVA_AUTH_URL = "https://www.strava.com/oauth/authorize";
 const STRAVA_TOKEN_URL = "https://www.strava.com/oauth/token";
 
-export function getStravaAuthorizeUrl(redirectUri: string): string {
+export function getStravaAuthorizeUrl(redirectUri: string): {
+  url: string;
+  state: string;
+} {
+  const state = randomUUID();
   const params = new URLSearchParams({
     client_id: process.env.STRAVA_CLIENT_ID!,
     redirect_uri: redirectUri,
     response_type: "code",
     scope: "read,activity:read_all",
     approval_prompt: "auto",
+    state,
   });
-  return `${STRAVA_AUTH_URL}?${params}`;
+  return { url: `${STRAVA_AUTH_URL}?${params}`, state };
 }
 
 export async function exchangeStravaCode(code: string, redirectUri: string) {
@@ -23,6 +30,13 @@ export async function exchangeStravaCode(code: string, redirectUri: string) {
       grant_type: "authorization_code",
     }),
   });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(
+      `Strava token exchange failed (${res.status}): ${text}`,
+    );
+  }
+
   return res.json() as Promise<{
     access_token: string;
     refresh_token: string;
@@ -42,6 +56,13 @@ export async function refreshStravaToken(refreshToken: string) {
       grant_type: "refresh_token",
     }),
   });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(
+      `Strava token refresh failed (${res.status}): ${text}`,
+    );
+  }
+
   return res.json() as Promise<{
     access_token: string;
     refresh_token: string;

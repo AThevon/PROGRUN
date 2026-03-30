@@ -15,5 +15,16 @@ export async function GET() {
   }
 
   const callbackUrl = `${getBaseUrl()}/api/strava/callback`;
-  return NextResponse.redirect(getStravaAuthorizeUrl(callbackUrl));
+  const { url, state } = getStravaAuthorizeUrl(callbackUrl);
+
+  const response = NextResponse.redirect(url);
+  response.cookies.set("oauth_state", state, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 600, // 10 minutes
+  });
+
+  return response;
 }

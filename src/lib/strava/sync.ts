@@ -20,15 +20,20 @@ async function getValidToken(userId: string): Promise<string | null> {
   }
 
   // Token expired, refresh it
-  const tokens = await refreshStravaToken(user.stravaRefreshToken);
-  await db.update(users).set({
-    stravaAccessToken: tokens.access_token,
-    stravaRefreshToken: tokens.refresh_token,
-    stravaTokenExpiresAt: String(tokens.expires_at),
-    updatedAt: new Date(),
-  }).where(eq(users.id, userId));
+  try {
+    const tokens = await refreshStravaToken(user.stravaRefreshToken);
+    await db.update(users).set({
+      stravaAccessToken: tokens.access_token,
+      stravaRefreshToken: tokens.refresh_token,
+      stravaTokenExpiresAt: String(tokens.expires_at),
+      updatedAt: new Date(),
+    }).where(eq(users.id, userId));
 
-  return tokens.access_token;
+    return tokens.access_token;
+  } catch (err) {
+    console.error("Failed to refresh Strava token:", err);
+    return null;
+  }
 }
 
 export async function syncStravaActivities(userId: string): Promise<number> {

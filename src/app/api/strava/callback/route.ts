@@ -20,10 +20,25 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
+  const state = url.searchParams.get("state");
 
   if (error || !code) {
     return NextResponse.redirect(
       new URL(`/settings?error=${error || "no_code"}`, getBaseUrl()),
+    );
+  }
+
+  // Vérification CSRF : le state reçu doit correspondre au cookie
+  const cookies = request.headers.get("cookie") || "";
+  const storedState = cookies
+    .split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith("oauth_state="))
+    ?.split("=")[1];
+
+  if (!state || !storedState || state !== storedState) {
+    return NextResponse.redirect(
+      new URL("/settings?error=invalid_state", getBaseUrl()),
     );
   }
 
@@ -48,11 +63,15 @@ export async function GET(request: Request) {
       })
       .where(eq(users.id, session.user.id));
 
-    return NextResponse.redirect(new URL("/settings?strava=connected", getBaseUrl()));
+    const response = NextResponse.redirect(new URL("/settings?strava=connected", getBaseUrl()));
+    response.cookies.delete("oauth_state");
+    return response;
   } catch (err) {
     console.error("Strava callback error:", err);
-    return NextResponse.redirect(
+    const response = NextResponse.redirect(
       new URL("/settings?error=callback_failed", getBaseUrl()),
     );
+    response.cookies.delete("oauth_state");
+    return response;
   }
 }
