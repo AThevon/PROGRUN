@@ -24,34 +24,41 @@ import {
 
 describe('getStravaAuthorizeUrl', () => {
   it('contient l\'URL de base Strava', () => {
-    const url = getStravaAuthorizeUrl('http://localhost:3000/callback')
-    expect(url).toContain('https://www.strava.com/oauth/authorize')
+    const result = getStravaAuthorizeUrl('http://localhost:3000/callback')
+    expect(result.url).toContain('https://www.strava.com/oauth/authorize')
   })
 
   it('contient le client_id', () => {
-    const url = getStravaAuthorizeUrl('http://localhost:3000/callback')
-    expect(url).toContain('client_id=test-client-id')
+    const result = getStravaAuthorizeUrl('http://localhost:3000/callback')
+    expect(result.url).toContain('client_id=test-client-id')
   })
 
   it('contient le redirect_uri', () => {
-    const url = getStravaAuthorizeUrl('http://localhost:3000/callback')
-    expect(url).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback')
+    const result = getStravaAuthorizeUrl('http://localhost:3000/callback')
+    expect(result.url).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback')
   })
 
   it('contient response_type=code', () => {
-    const url = getStravaAuthorizeUrl('http://localhost:3000/callback')
-    expect(url).toContain('response_type=code')
+    const result = getStravaAuthorizeUrl('http://localhost:3000/callback')
+    expect(result.url).toContain('response_type=code')
   })
 
   it('contient le scope requis', () => {
-    const url = getStravaAuthorizeUrl('http://localhost:3000/callback')
-    expect(url).toContain('scope=read')
-    expect(url).toContain('activity%3Aread_all')
+    const result = getStravaAuthorizeUrl('http://localhost:3000/callback')
+    expect(result.url).toContain('scope=read')
+    expect(result.url).toContain('activity%3Aread_all')
   })
 
   it('contient approval_prompt=auto', () => {
-    const url = getStravaAuthorizeUrl('http://localhost:3000/callback')
-    expect(url).toContain('approval_prompt=auto')
+    const result = getStravaAuthorizeUrl('http://localhost:3000/callback')
+    expect(result.url).toContain('approval_prompt=auto')
+  })
+
+  it('retourne un state qui est un UUID', () => {
+    const result = getStravaAuthorizeUrl('http://localhost:3000/callback')
+    expect(result.state).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+    )
   })
 })
 
@@ -89,14 +96,15 @@ describe('exchangeStravaCode', () => {
     expect(result.athlete.id).toBe(42)
   })
 
-  it('retourne la réponse d\'erreur telle quelle (pas de throw)', async () => {
+  it('lance une erreur quand la réponse est en échec', async () => {
     const errorBody = { message: 'Bad Request', errors: [] }
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify(errorBody), { status: 400 })
     )
 
-    const result = await exchangeStravaCode('bad-code', 'http://localhost:3000/callback')
-    expect(result).toEqual(errorBody)
+    await expect(
+      exchangeStravaCode('bad-code', 'http://localhost:3000/callback')
+    ).rejects.toThrow('Strava token exchange failed (400)')
   })
 })
 
@@ -131,13 +139,14 @@ describe('refreshStravaToken', () => {
     expect(result.refresh_token).toBe('new-refresh')
   })
 
-  it('retourne la réponse d\'erreur telle quelle (pas de throw)', async () => {
+  it('lance une erreur quand la réponse est en échec', async () => {
     const errorBody = { message: 'Unauthorized' }
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify(errorBody), { status: 401 })
     )
 
-    const result = await refreshStravaToken('expired-token')
-    expect(result).toEqual(errorBody)
+    await expect(
+      refreshStravaToken('expired-token')
+    ).rejects.toThrow('Strava token refresh failed (401)')
   })
 })
