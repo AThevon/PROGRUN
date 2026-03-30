@@ -29,12 +29,14 @@ export function StravaSyncModal() {
   const [activities, setActivities] = useState<StravaActivity[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [result, setResult] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   async function openModal() {
     setOpen(true);
     setLoading(true);
     setResult(null);
+    setError(null);
     setSelected(new Set());
     try {
       const res = await fetch("/api/strava/activities");
@@ -42,6 +44,7 @@ export function StravaSyncModal() {
       setActivities(data.activities ?? []);
     } catch {
       setActivities([]);
+      setError("Impossible de recuperer les activites Strava.");
     } finally {
       setLoading(false);
     }
@@ -62,6 +65,7 @@ export function StravaSyncModal() {
   async function handleImport() {
     if (selected.size === 0) return;
     setImporting(true);
+    setError(null);
     try {
       const res = await fetch("/api/strava/import", {
         method: "POST",
@@ -77,7 +81,7 @@ export function StravaSyncModal() {
       setActivities(refreshedData.activities ?? []);
       setSelected(new Set());
     } catch {
-      // Keep modal open on error
+      setError("Erreur lors de l'importation des activites.");
     } finally {
       setImporting(false);
     }
@@ -130,6 +134,13 @@ export function StravaSyncModal() {
               </div>
             ) : (
               <>
+                {error && (
+                  <div className="flex items-center gap-2 bg-accent2/10 border border-accent2/20 rounded-xl p-3">
+                    <X size={16} className="text-accent2 shrink-0" />
+                    <span className="text-sm font-dm text-accent2">{error}</span>
+                  </div>
+                )}
+
                 {result !== null && (
                   <div className="flex items-center gap-2 bg-success/10 border border-success/20 rounded-xl p-3">
                     <Check size={16} className="text-success shrink-0" />

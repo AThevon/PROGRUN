@@ -19,11 +19,20 @@ export function DeleteButton({
   async function handleDelete() {
     if (!confirm("Supprimer cette activite ?")) return;
     setDeleting(true);
-    await fetch(`/api/activities/${activityId}`, { method: "DELETE" });
-    if (redirectToList) {
-      router.push("/activities");
-    } else {
-      router.refresh();
+    try {
+      const res = await fetch(`/api/activities/${activityId}`, { method: "DELETE" });
+      if (!res.ok) {
+        console.error("Erreur lors de la suppression:", res.status, res.statusText);
+        alert("Erreur lors de la suppression de l'activite.");
+        return;
+      }
+      if (redirectToList) {
+        router.push("/activities");
+      } else {
+        router.refresh();
+      }
+    } finally {
+      setDeleting(false);
     }
   }
 

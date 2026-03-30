@@ -64,8 +64,9 @@ export async function parseFitFile(buffer: ArrayBuffer): Promise<ParsedActivity>
   // Calories
   const calories = (session.total_calories as number | undefined) ?? null;
 
-  // VO2max
-  const vo2max = (session.enhanced_avg_respiration_rate as number | undefined) ?? null;
+  // VO2max — not available in standard FIT session fields.
+  // enhanced_avg_respiration_rate is respiration rate, not VO2max.
+  const vo2max = null;
 
   // Ground contact time (in ms in FIT)
   const groundContactTime = (session.avg_stance_time as number | undefined) ?? null;
@@ -151,11 +152,7 @@ export function parseTcxFile(xml: string): ParsedActivity {
   const avgPace = paceSeconds > 0 ? secondsToPace(paceSeconds) : "--:--";
 
   // Heart rate
-  const avgHeartRateRaw = extractXmlNumber(xml, "AverageHeartRateBpm") ?? null;
-  const avgHeartRate =
-    avgHeartRateRaw ??
-    extractXmlNumber(xml, "Value") ??
-    null;
+  const avgHeartRate = extractXmlNumber(xml, "AverageHeartRateBpm") ?? null;
   const maxHeartRate = extractXmlNumber(xml, "MaximumHeartRateBpm") ?? null;
 
   // Calories

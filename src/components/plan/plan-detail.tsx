@@ -22,6 +22,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import type { Plan, WeekWithProgress } from "@/types";
+import { paceToSeconds } from "@/lib/utils/pace";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -804,7 +805,7 @@ function SessionDetailDrawer({
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-dm text-muted">{s.targetPace} /km</span>
                         <ArrowRight size={10} className="text-muted" />
-                        <span className={`text-xs font-dm font-semibold ${s.activity.avgPace <= s.targetPace ? "text-success" : "text-accent2"}`}>{s.activity.avgPace} /km</span>
+                        <span className={`text-xs font-dm font-semibold ${paceToSeconds(s.activity.avgPace) <= paceToSeconds(s.targetPace) ? "text-success" : "text-accent2"}`}>{s.activity.avgPace} /km</span>
                       </div>
                     </div>
                   )}
