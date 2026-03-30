@@ -7,6 +7,7 @@ import { PrimaryMetrics } from "@/components/activity/primary-metrics";
 import { SecondaryMetrics } from "@/components/activity/secondary-metrics";
 import { PaceChart } from "@/components/activity/pace-chart";
 import { LapsTable } from "@/components/activity/laps-table";
+import { DeleteButton } from "@/components/activity/delete-button";
 
 interface Lap {
   distanceKm: number;
@@ -122,6 +123,7 @@ export default async function ActivityDetailPage({
         <span className="bg-surface border border-border text-muted text-[10px] font-dm font-semibold px-2 py-0.5 rounded-full">
           {getWeekBadge(activity.date)}
         </span>
+        <DeleteButton activityId={activity.id} redirectToList />
       </div>
 
       {/* GPS map placeholder */}

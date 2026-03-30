@@ -15,7 +15,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { signOut } from "@/lib/auth";
-import { SyncButton } from "@/components/dashboard/sync-button";
+import { StravaSyncModal } from "@/components/dashboard/strava-sync-modal";
 
 export default async function SettingsPage() {
   const session = await requireAuth();
@@ -79,7 +79,7 @@ export default async function SettingsPage() {
               </span>
             </div>
             <div className="p-4">
-              <SyncButton />
+              <StravaSyncModal />
             </div>
           </>
         ) : (
