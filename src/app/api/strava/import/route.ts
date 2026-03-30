@@ -6,6 +6,7 @@ import { eq, and } from "drizzle-orm";
 import { refreshStravaToken } from "@/lib/strava/oauth";
 import { calculatePace } from "@/lib/utils/pace";
 import { autoMatchActivity } from "@/lib/utils/matching";
+import { refreshPersonalRecords } from "@/lib/utils/records";
 
 async function getValidToken(userId: string) {
   const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
@@ -155,6 +156,11 @@ export async function POST(request: Request) {
       distanceKm
     );
     imported++;
+  }
+
+  // Refresh personal records after import
+  if (imported > 0) {
+    await refreshPersonalRecords(userId);
   }
 
   return NextResponse.json({ imported });

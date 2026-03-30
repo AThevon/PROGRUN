@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { activities } from "@/lib/db/schema";
 import { parseFitFile, parseTcxFile, parseGpxFile } from "@/lib/garmin/parser";
 import { autoMatchActivity } from "@/lib/utils/matching";
+import { refreshPersonalRecords } from "@/lib/utils/records";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest) {
 
   // Attempt auto-matching to an active plan session
   await autoMatchActivity(inserted.id, userId, inserted.date, inserted.distanceKm);
+
+  // Refresh personal records
+  await refreshPersonalRecords(userId);
 
   return NextResponse.json(inserted, { status: 201 });
 }
