@@ -24,7 +24,7 @@ export function LastRunChart({ laps }: { laps: Lap[] }) {
             <stop offset="100%" stopColor="#e8ff47" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <YAxis domain={["dataMin - 15", "dataMax + 15"]} hide reversed />
+        <YAxis hide reversed />
         <ReferenceLine y={avgPace} stroke="#ff6b35" strokeDasharray="4 4" strokeWidth={1} />
         <Area
           type="monotone"
