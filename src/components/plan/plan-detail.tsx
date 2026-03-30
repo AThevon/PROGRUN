@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
   Check,
   Zap,
   Moon,
@@ -67,33 +66,15 @@ interface PlanDetailProps {
 
 export function PlanDetail({ plan, weeks }: PlanDetailProps) {
   const router = useRouter();
-  const weekRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   const durationWeeks = plan.durationWeeks ?? weeks.length;
   const currentWeek = getCurrentWeek(plan.startDate ?? null, durationWeeks);
 
-  // Track which weeks are collapsed (past weeks default collapsed, others expanded)
-  const [collapsed, setCollapsed] = useState<Record<number, boolean>>(() => {
-    const init: Record<number, boolean> = {};
-    weeks.forEach((w) => {
-      init[w.weekNumber] = w.weekNumber < currentWeek;
-    });
-    return init;
-  });
+  // Which week is currently selected (null = show overview of all weeks)
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
 
-  function toggleWeek(weekNumber: number) {
-    setCollapsed((prev) => ({ ...prev, [weekNumber]: !prev[weekNumber] }));
-  }
-
-  function scrollToWeek(weekNumber: number) {
-    // Expand if collapsed
-    setCollapsed((prev) => ({ ...prev, [weekNumber]: false }));
-    setTimeout(() => {
-      weekRefs.current[weekNumber]?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 50);
+  function selectWeek(weekNumber: number) {
+    setSelectedWeek((prev) => (prev === weekNumber ? null : weekNumber));
   }
 
   // Progress ring
@@ -208,15 +189,18 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
           const color = PHASE_COLORS[w.phase ?? "build"] ?? "#888890";
           const isCurrent = w.weekNumber === currentWeek;
           const isDone = w.weekNumber < currentWeek;
+          const isSelected = selectedWeek === w.weekNumber;
           return (
             <button
               key={w.weekNumber}
-              onClick={() => scrollToWeek(w.weekNumber)}
-              className={`flex-1 h-7 rounded-md flex items-center justify-center font-bebas text-xs text-bg ${
-                isCurrent
-                  ? "ring-2 ring-text ring-offset-2 ring-offset-bg"
-                  : ""
-              } ${isDone ? "opacity-60" : ""}`}
+              onClick={() => selectWeek(w.weekNumber)}
+              className={`flex-1 h-8 rounded-md flex items-center justify-center font-bebas text-xs text-bg transition-all ${
+                isSelected
+                  ? "ring-2 ring-accent ring-offset-2 ring-offset-bg scale-110"
+                  : isCurrent
+                    ? "ring-2 ring-text ring-offset-2 ring-offset-bg"
+                    : ""
+              } ${isDone && !isSelected ? "opacity-60" : ""}`}
               style={{ backgroundColor: color }}
             >
               S{w.weekNumber}
@@ -226,79 +210,67 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
         })}
       </div>
 
+      {/* Selected week hint */}
+      {selectedWeek !== null && (
+        <button
+          onClick={() => setSelectedWeek(null)}
+          className="text-xs font-dm text-accent flex items-center gap-1 self-start"
+        >
+          <ChevronLeft size={12} />
+          Voir toutes les semaines
+        </button>
+      )}
+
       {/* Weeks */}
-      {weeks.map((week) => {
+      {weeks
+        .filter((w) => selectedWeek === null || w.weekNumber === selectedWeek)
+        .map((week) => {
         const isCurrent = week.weekNumber === currentWeek;
         const isPast = week.weekNumber < currentWeek;
         const isFuture = week.weekNumber > currentWeek;
         const phaseColor = PHASE_COLORS[week.phase ?? "build"] ?? "#888890";
         const phaseName =
           PHASE_NAMES[week.phase ?? ""] ?? week.phase ?? "";
-        const isCollapsed = collapsed[week.weekNumber] ?? false;
+        const showExpanded = selectedWeek !== null || isCurrent || isFuture;
 
-        // Past weeks: compact summary card
-        if (isPast) {
+        // Compact summary (only when no week is selected and week is past)
+        if (isPast && selectedWeek === null) {
           return (
-            <div
+            <button
               key={week.id}
-              ref={(el) => {
-                weekRefs.current[week.weekNumber] = el;
-              }}
-              className="bg-surface border border-border rounded-xl overflow-hidden"
+              onClick={() => selectWeek(week.weekNumber)}
+              className="w-full bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-4 active:opacity-75 transition-opacity text-left"
             >
-              <button
-                className="w-full px-4 py-3 flex items-center gap-4 active:opacity-75 transition-opacity"
-                onClick={() => toggleWeek(week.weekNumber)}
-              >
-                <span className="font-bebas text-3xl leading-none text-success min-w-[28px]">
-                  {week.weekNumber}
+              <span className="font-bebas text-3xl leading-none text-success min-w-[28px]">
+                {week.weekNumber}
+              </span>
+              <div className="flex-1">
+                <span className="text-sm font-dm text-text">
+                  {week.title}
                 </span>
-                <div className="flex-1 text-left">
-                  <span className="text-sm font-dm text-text">
-                    {week.title}
-                  </span>
-                  <div className="text-[11px] font-dm text-muted">
-                    {week.actualVolumeKm.toFixed(1)} /{" "}
-                    {(week.targetVolumeKm ?? 0).toFixed(1)} km -{" "}
-                    {week.completedSessions} seances
-                  </div>
+                <div className="text-[11px] font-dm text-muted">
+                  {week.actualVolumeKm.toFixed(1)} /{" "}
+                  {(week.targetVolumeKm ?? 0).toFixed(1)} km -{" "}
+                  {week.completedSessions} seances
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-success/20 flex items-center justify-center">
-                    <Check size={14} className="text-success" />
-                  </div>
-                  {isCollapsed ? (
-                    <ChevronDown size={14} className="text-muted" />
-                  ) : (
-                    <ChevronUp size={14} className="text-muted" />
-                  )}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-success/20 flex items-center justify-center">
+                  <Check size={14} className="text-success" />
                 </div>
-              </button>
-
-              {!isCollapsed && (
-                <div className="px-4 pb-4 flex flex-col gap-2">
-                  {week.sessions.map((s) => (
-                    <SessionCard key={s.id} session={s} />
-                  ))}
-                </div>
-              )}
-            </div>
+                <ChevronRight size={14} className="text-muted" />
+              </div>
+            </button>
           );
         }
 
-        // Current & future weeks: expanded (future is dimmed)
+        // Expanded week view (selected, current, or future)
         return (
           <div
             key={week.id}
-            ref={(el) => {
-              weekRefs.current[week.weekNumber] = el;
-            }}
-            className={`flex flex-col gap-3 ${isFuture ? "opacity-50" : ""}`}
+            className={`flex flex-col gap-3 ${isFuture && selectedWeek === null ? "opacity-50" : ""}`}
           >
-            <button
-              className="flex items-center gap-3 w-full active:opacity-75 transition-opacity"
-              onClick={() => toggleWeek(week.weekNumber)}
-            >
+            <div className="flex items-center gap-3">
               <span className="font-bebas text-xl leading-none text-text">
                 Semaine {week.weekNumber}
               </span>
@@ -315,27 +287,37 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
                 </span>
               )}
               <div className="flex-1 h-px bg-border" />
-              {isCollapsed ? (
-                <ChevronDown size={14} className="text-muted" />
-              ) : (
-                <ChevronUp size={14} className="text-muted" />
-              )}
-            </button>
+            </div>
 
-            {!isCollapsed && (
-              <>
-                {isCurrent && (
-                  <p className="text-xs font-dm text-muted italic">
-                    Semaine en cours
-                  </p>
-                )}
-                <div className="flex flex-col gap-2">
-                  {week.sessions.map((s) => (
-                    <SessionCard key={s.id} session={s} />
-                  ))}
-                </div>
-              </>
+            {isCurrent && selectedWeek === null && (
+              <p className="text-xs font-dm text-muted italic">
+                Semaine en cours
+              </p>
             )}
+
+            {/* Week stats when selected */}
+            {selectedWeek !== null && (
+              <div className="flex gap-3">
+                <div className="flex-1 bg-surface border border-border rounded-lg p-3 text-center">
+                  <span className="text-[9px] font-dm text-muted uppercase tracking-wider">Volume</span>
+                  <div className="font-bebas text-xl leading-none text-accent mt-1">
+                    {week.actualVolumeKm.toFixed(1)} <span className="text-sm text-muted font-dm">/ {(week.targetVolumeKm ?? 0).toFixed(1)} km</span>
+                  </div>
+                </div>
+                <div className="flex-1 bg-surface border border-border rounded-lg p-3 text-center">
+                  <span className="text-[9px] font-dm text-muted uppercase tracking-wider">Seances</span>
+                  <div className="font-bebas text-xl leading-none text-success mt-1">
+                    {week.completedSessions} <span className="text-sm text-muted font-dm">/ {week.sessions.length}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              {week.sessions.map((s) => (
+                <SessionCard key={s.id} session={s} />
+              ))}
+            </div>
           </div>
         );
       })}
