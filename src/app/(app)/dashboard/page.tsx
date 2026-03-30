@@ -4,7 +4,6 @@ import { getActivePlan, getPlanWeeksWithProgress } from "@/lib/db/queries/plans"
 import { getLastActivity } from "@/lib/db/queries/activities";
 import { getCumulativeStats } from "@/lib/db/queries/stats";
 import { calculatePace } from "@/lib/utils/pace";
-import { GarminSyncStatus } from "@/components/dashboard/garmin-sync-status";
 import { NextSessionHero } from "@/components/dashboard/next-session-hero";
 import { QuickStats } from "@/components/dashboard/quick-stats";
 import { LastRunCard } from "@/components/dashboard/last-run-card";
@@ -94,9 +93,6 @@ export default async function DashboardPage() {
 
   const userName = session.user?.name?.split(" ")[0] ?? "Runner";
 
-  // Garmin connection
-  // @ts-expect-error — garminUserId may not be typed on session.user
-  const isGarminConnected = Boolean(session.user?.garminUserId);
 
   return (
     <div className="p-5 flex flex-col gap-5">
@@ -114,9 +110,6 @@ export default async function DashboardPage() {
           <User size={20} strokeWidth={2} />
         </div>
       </div>
-
-      {/* Garmin sync status */}
-      <GarminSyncStatus isConnected={isGarminConnected} lastSync={null} />
 
       {/* No plan empty state */}
       {!plan && (
