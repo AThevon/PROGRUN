@@ -12,6 +12,13 @@ import {
   Clock,
   Heart,
   ArrowRight,
+  X,
+  Target,
+  Flame,
+  Timer,
+  TrendingUp,
+  Footprints,
+  ExternalLink,
 } from "lucide-react";
 import type { Plan, WeekWithProgress } from "@/types";
 
@@ -72,6 +79,8 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
 
   // Which week is currently selected (null = show overview of all weeks)
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+  // Which session is open in detail drawer
+  const [openSession, setOpenSession] = useState<SessionWithActivity | null>(null);
 
   function selectWeek(weekNumber: number) {
     setSelectedWeek((prev) => (prev === weekNumber ? null : weekNumber));
@@ -315,12 +324,21 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
 
             <div className="flex flex-col gap-2">
               {week.sessions.map((s) => (
-                <SessionCard key={s.id} session={s} />
+                <SessionCard key={s.id} session={s} onOpen={() => setOpenSession(s)} />
               ))}
             </div>
           </div>
         );
       })}
+
+      {/* Session detail drawer */}
+      {openSession && (
+        <SessionDetailDrawer
+          session={openSession}
+          onClose={() => setOpenSession(null)}
+          planTargetPace={plan.targetPace}
+        />
+      )}
     </div>
   );
 }
@@ -331,15 +349,16 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
 
 type SessionWithActivity = WeekWithProgress["sessions"][number];
 
-function SessionCard({ session: s }: { session: SessionWithActivity }) {
+function SessionCard({ session: s, onOpen }: { session: SessionWithActivity; onOpen?: () => void }) {
   const hasActivity = !!s.activity;
   const isKey = s.isKeySession ?? false;
   const isRest = s.type === "repos";
   const dayName = s.dayOfWeek != null ? (DAY_NAMES[s.dayOfWeek] ?? "?") : "?";
 
   return (
-    <div
-      className={`bg-card border rounded-xl p-3 flex gap-3 ${
+    <button
+      onClick={onOpen}
+      className={`w-full text-left bg-card border rounded-xl p-3 flex gap-3 active:opacity-80 transition-opacity ${
         hasActivity
           ? "border-success"
           : isKey
@@ -455,6 +474,271 @@ function SessionCard({ session: s }: { session: SessionWithActivity }) {
           </div>
         )}
       </div>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SessionDetailDrawer
+// ---------------------------------------------------------------------------
+
+function SessionDetailDrawer({
+  session: s,
+  onClose,
+  planTargetPace,
+}: {
+  session: SessionWithActivity;
+  onClose: () => void;
+  planTargetPace: string | null;
+}) {
+  const router = useRouter();
+  const hasActivity = !!s.activity;
+  const isKey = s.isKeySession ?? false;
+  const dayName = s.dayOfWeek != null ? (DAY_NAMES[s.dayOfWeek] ?? "?") : "?";
+  const intervals = s.intervals as { reps?: number; work?: string; rest?: string } | null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex flex-col bg-bg/95 backdrop-blur"
+      style={{ WebkitBackdropFilter: "blur(8px)" }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3 p-5 border-b border-border shrink-0">
+        <button
+          onClick={onClose}
+          className="w-9 h-9 rounded-full bg-surface border border-border flex items-center justify-center"
+        >
+          <X size={16} className="text-text" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <span className="text-[10px] font-dm text-muted uppercase tracking-wider">{dayName} - {s.type}</span>
+          <h2 className="font-bebas text-2xl leading-none text-text truncate">{s.title ?? "Seance"}</h2>
+        </div>
+        {isKey && (
+          <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+            <Zap size={16} className="text-accent" />
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+
+        {/* Description */}
+        {s.description && (
+          <div className="bg-surface border border-border rounded-xl p-4">
+            <span className="text-[10px] font-dm text-muted uppercase tracking-wider">Description</span>
+            <p className="text-sm font-dm text-text mt-1 leading-relaxed">{s.description}</p>
+          </div>
+        )}
+
+        {/* Objectifs */}
+        <div className="bg-surface border border-border rounded-xl p-4">
+          <span className="text-[10px] font-dm text-muted uppercase tracking-wider mb-3 block">Objectifs</span>
+          <div className="grid grid-cols-2 gap-3">
+            {s.targetDistanceKm != null && (
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <MapPin size={16} className="text-accent" />
+                </div>
+                <div>
+                  <span className="font-bebas text-xl leading-none text-text">{s.targetDistanceKm.toFixed(1)} km</span>
+                  <span className="text-[10px] font-dm text-muted block">Distance</span>
+                </div>
+              </div>
+            )}
+            {s.targetPace && (
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Clock size={16} className="text-accent" />
+                </div>
+                <div>
+                  <span className="font-bebas text-xl leading-none text-text">{s.targetPace} /km</span>
+                  <span className="text-[10px] font-dm text-muted block">Allure</span>
+                </div>
+              </div>
+            )}
+            {s.targetZone && (
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Target size={16} className="text-accent" />
+                </div>
+                <div>
+                  <span className="font-bebas text-xl leading-none text-text">{s.targetZone.toUpperCase()}</span>
+                  <span className="text-[10px] font-dm text-muted block">Zone</span>
+                </div>
+              </div>
+            )}
+            {planTargetPace && (
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-accent2/10 flex items-center justify-center">
+                  <TrendingUp size={16} className="text-accent2" />
+                </div>
+                <div>
+                  <span className="font-bebas text-xl leading-none text-text">{planTargetPace} /km</span>
+                  <span className="text-[10px] font-dm text-muted block">Objectif plan</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Intervals detail */}
+        {intervals && (intervals.reps || intervals.work) && (
+          <div className="bg-surface border border-accent/20 rounded-xl p-4">
+            <span className="text-[10px] font-dm text-accent uppercase tracking-wider mb-2 block">Fractionne</span>
+            <div className="flex flex-col gap-2">
+              {intervals.reps && (
+                <div className="flex items-center gap-2">
+                  <span className="font-bebas text-3xl leading-none text-accent">{intervals.reps}x</span>
+                  <div className="flex flex-col">
+                    {intervals.work && <span className="text-sm font-dm text-text">{intervals.work}</span>}
+                    {intervals.rest && <span className="text-xs font-dm text-muted">Recup: {intervals.rest}</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Activity data if linked */}
+        {hasActivity && s.activity && (
+          <>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-[10px] font-dm text-success uppercase tracking-wider flex items-center gap-1">
+                <Check size={10} /> Activite realisee
+              </span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            {/* Primary metrics */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-surface border border-border rounded-xl p-3 text-center">
+                <MapPin size={14} className="text-muted mx-auto mb-1" />
+                <span className="font-bebas text-2xl leading-none text-success block">{s.activity.distanceKm.toFixed(1)}</span>
+                <span className="text-[9px] font-dm text-muted uppercase">km</span>
+              </div>
+              <div className="bg-surface border border-border rounded-xl p-3 text-center">
+                <Clock size={14} className="text-muted mx-auto mb-1" />
+                <span className="font-bebas text-2xl leading-none text-text block">{s.activity.avgPace ?? "--"}</span>
+                <span className="text-[9px] font-dm text-muted uppercase">/km</span>
+              </div>
+              <div className="bg-surface border border-border rounded-xl p-3 text-center">
+                <Timer size={14} className="text-muted mx-auto mb-1" />
+                <span className="font-bebas text-2xl leading-none text-text block">{formatSeconds(s.activity.durationSeconds)}</span>
+                <span className="text-[9px] font-dm text-muted uppercase">temps</span>
+              </div>
+            </div>
+
+            {/* Secondary metrics */}
+            <div className="grid grid-cols-2 gap-2">
+              {s.activity.avgHeartRate != null && (
+                <div className="bg-surface border border-border rounded-xl p-3 flex items-center gap-3">
+                  <Heart size={16} className="text-accent2" />
+                  <div>
+                    <span className="font-bebas text-xl leading-none text-text">{s.activity.avgHeartRate}</span>
+                    <span className="text-[10px] font-dm text-muted block">FC moy (bpm)</span>
+                  </div>
+                </div>
+              )}
+              {s.activity.maxHeartRate != null && (
+                <div className="bg-surface border border-border rounded-xl p-3 flex items-center gap-3">
+                  <Heart size={16} className="text-accent2" />
+                  <div>
+                    <span className="font-bebas text-xl leading-none text-text">{s.activity.maxHeartRate}</span>
+                    <span className="text-[10px] font-dm text-muted block">FC max (bpm)</span>
+                  </div>
+                </div>
+              )}
+              {s.activity.avgCadence != null && (
+                <div className="bg-surface border border-border rounded-xl p-3 flex items-center gap-3">
+                  <Footprints size={16} className="text-muted" />
+                  <div>
+                    <span className="font-bebas text-xl leading-none text-text">{s.activity.avgCadence}</span>
+                    <span className="text-[10px] font-dm text-muted block">Cadence (spm)</span>
+                  </div>
+                </div>
+              )}
+              {s.activity.elevationGain != null && (
+                <div className="bg-surface border border-border rounded-xl p-3 flex items-center gap-3">
+                  <TrendingUp size={16} className="text-muted" />
+                  <div>
+                    <span className="font-bebas text-xl leading-none text-text">+{Math.round(s.activity.elevationGain)}</span>
+                    <span className="text-[10px] font-dm text-muted block">Denivele (m)</span>
+                  </div>
+                </div>
+              )}
+              {s.activity.calories != null && (
+                <div className="bg-surface border border-border rounded-xl p-3 flex items-center gap-3">
+                  <Flame size={16} className="text-accent2" />
+                  <div>
+                    <span className="font-bebas text-xl leading-none text-text">{s.activity.calories}</span>
+                    <span className="text-[10px] font-dm text-muted block">Calories</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Compare target vs actual */}
+            {s.targetDistanceKm != null && (
+              <div className="bg-surface border border-border rounded-xl p-4">
+                <span className="text-[10px] font-dm text-muted uppercase tracking-wider mb-3 block">Objectif vs Realise</span>
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-dm text-muted">Distance</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-dm text-muted">{s.targetDistanceKm.toFixed(1)} km</span>
+                      <ArrowRight size={10} className="text-muted" />
+                      <span className="text-xs font-dm font-semibold text-success">{s.activity.distanceKm.toFixed(1)} km</span>
+                    </div>
+                  </div>
+                  {s.targetPace && s.activity.avgPace && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-dm text-muted">Allure</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-dm text-muted">{s.targetPace} /km</span>
+                        <ArrowRight size={10} className="text-muted" />
+                        <span className={`text-xs font-dm font-semibold ${s.activity.avgPace <= s.targetPace ? "text-success" : "text-accent2"}`}>{s.activity.avgPace} /km</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Link to full activity */}
+            <button
+              onClick={() => router.push(`/activities/${s.activity!.id}`)}
+              className="w-full flex items-center justify-center gap-2 bg-surface border border-border rounded-xl p-3 text-sm font-dm text-accent active:opacity-70 transition-opacity"
+            >
+              <ExternalLink size={14} />
+              Voir l'activite complete
+            </button>
+          </>
+        )}
+
+        {/* Not done yet */}
+        {!hasActivity && (
+          <div className="bg-surface border border-border rounded-xl p-6 text-center">
+            <div className="w-12 h-12 rounded-full bg-border/30 flex items-center justify-center mx-auto mb-3">
+              <Clock size={20} className="text-muted" />
+            </div>
+            <span className="font-bebas text-xl text-muted">Pas encore realisee</span>
+            <p className="text-xs font-dm text-muted mt-1">
+              Importe ton activite depuis Strava ou un fichier FIT pour la lier a cette seance.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
+}
+
+function formatSeconds(sec: number): string {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
