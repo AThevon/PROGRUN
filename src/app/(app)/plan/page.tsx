@@ -88,8 +88,8 @@ export default async function PlanPage() {
 
       {/* Plan selector with progress ring */}
       <PlanSelector
-        plans={allPlans}
-        activePlan={activePlan}
+        plans={JSON.parse(JSON.stringify(allPlans))}
+        activePlan={JSON.parse(JSON.stringify(activePlan))}
         currentWeek={currentWeekNumber}
         weekDistance={weekDistance}
         weekTarget={weekTarget}
