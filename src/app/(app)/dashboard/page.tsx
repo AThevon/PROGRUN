@@ -125,8 +125,8 @@ export default async function DashboardPage() {
       )}
 
       {/* Next session hero */}
-      {nextSession && nextSessionWeek && (
-        <NextSessionHero session={nextSession} week={nextSessionWeek} />
+      {nextSession && nextSessionWeek && plan && (
+        <NextSessionHero session={nextSession} week={nextSessionWeek} planId={plan.id} />
       )}
 
       {/* Quick stats */}

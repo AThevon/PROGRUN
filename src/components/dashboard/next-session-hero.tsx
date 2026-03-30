@@ -1,20 +1,24 @@
-import { Clock } from "lucide-react";
+import Link from "next/link";
+import { Clock, ChevronRight } from "lucide-react";
 import type { PlanSession, PlanWeek } from "@/types";
 
-const DAY_NAMES = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+// dayOfWeek in DB: 0=Lundi, 1=Mardi, ..., 6=Dimanche
+const DAY_NAMES = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
 interface NextSessionHeroProps {
   session: PlanSession;
   week: PlanWeek;
+  planId: string;
 }
 
-export function NextSessionHero({ session, week }: NextSessionHeroProps) {
+export function NextSessionHero({ session, week, planId }: NextSessionHeroProps) {
   const dayName =
     session.dayOfWeek != null ? (DAY_NAMES[session.dayOfWeek] ?? "?") : "?";
 
   return (
-    <div
-      className="rounded-2xl p-5 flex flex-col gap-4"
+    <Link
+      href={`/plan/${planId}`}
+      className="block rounded-2xl p-5 flex flex-col gap-4 active:opacity-80 transition-opacity"
       style={{
         background:
           "linear-gradient(135deg, #1c1c22 0%, #1a1a24 40%, #16161a 100%)",
@@ -22,11 +26,14 @@ export function NextSessionHero({ session, week }: NextSessionHeroProps) {
       }}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 text-muted">
-        <Clock size={14} strokeWidth={2} />
-        <span className="text-xs font-dm uppercase tracking-widest">
-          Prochaine seance — {dayName}
-        </span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-muted">
+          <Clock size={14} strokeWidth={2} />
+          <span className="text-xs font-dm uppercase tracking-widest">
+            Prochaine seance — {dayName}
+          </span>
+        </div>
+        <ChevronRight size={16} className="text-muted" />
       </div>
 
       {/* Title */}
@@ -50,11 +57,11 @@ export function NextSessionHero({ session, week }: NextSessionHeroProps) {
           <MetaPill label="Allure cible" value={`${session.targetPace} /km`} />
         )}
         {session.targetZone && (
-          <MetaPill label="Zone" value={session.targetZone} />
+          <MetaPill label="Zone" value={session.targetZone.toUpperCase()} />
         )}
         <MetaPill label="Semaine" value={`S${week.weekNumber}`} />
       </div>
-    </div>
+    </Link>
   );
 }
 
