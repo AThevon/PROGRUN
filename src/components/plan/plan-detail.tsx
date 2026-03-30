@@ -84,8 +84,8 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
   const durationWeeks = plan.durationWeeks ?? weeks.length;
   const currentWeek = getCurrentWeek(plan.startDate ?? null, durationWeeks);
 
-  // Which week is currently selected (null = show overview of all weeks)
-  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+  // Which week is currently selected (null = show overview of all weeks, default = current week)
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(currentWeek);
   // Which session is open in detail drawer
   const [openSession, setOpenSession] = useState<SessionWithActivity | null>(null);
 
@@ -212,11 +212,9 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
               onClick={() => selectWeek(w.weekNumber)}
               className={`flex-1 h-8 rounded-md flex items-center justify-center font-bebas text-xs text-bg transition-all ${
                 isSelected
-                  ? "ring-2 ring-accent ring-offset-2 ring-offset-bg scale-110"
-                  : isCurrent
-                    ? "ring-2 ring-text ring-offset-2 ring-offset-bg"
-                    : ""
-              } ${isDone && !isSelected ? "opacity-60" : ""}`}
+                  ? "scale-110 brightness-125"
+                  : ""
+              } ${isDone && !isSelected ? "opacity-50" : ""}`}
               style={{ backgroundColor: color }}
             >
               S{w.weekNumber}
@@ -357,20 +355,30 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
 
 type SessionWithActivity = WeekWithProgress["sessions"][number];
 
+const SESSION_TYPE_STYLE: Record<string, { color: string; bg: string; icon: typeof Check }> = {
+  fondamentale: { color: "text-success", bg: "bg-success/20", icon: Heart },
+  fractionne:   { color: "text-accent2", bg: "bg-accent2/20", icon: Zap },
+  fartlek:      { color: "text-accent",  bg: "bg-accent/20",  icon: Zap },
+  sortie_longue:{ color: "text-info",    bg: "bg-info/20",    icon: MapPin },
+  tempo:        { color: "text-accent",  bg: "bg-accent/20",  icon: TrendingUp },
+  recup:        { color: "text-info",    bg: "bg-info/20",    icon: Moon },
+  repos:        { color: "text-muted",   bg: "bg-border/30",  icon: Moon },
+  course:       { color: "text-accent",  bg: "bg-accent/20",  icon: Flame },
+};
+
 function SessionCard({ session: s, onOpen }: { session: SessionWithActivity; onOpen?: () => void }) {
   const hasActivity = !!s.activity;
-  const isKey = s.isKeySession ?? false;
   const isRest = s.type === "repos";
   const dayName = s.dayOfWeek != null ? (DAY_NAMES[s.dayOfWeek] ?? "?") : "?";
+  const typeStyle = SESSION_TYPE_STYLE[s.type ?? ""] ?? { color: "text-muted", bg: "bg-border/30", icon: MapPin };
+  const Icon = hasActivity ? Check : typeStyle.icon;
 
   return (
     <button
       onClick={onOpen}
       className={`w-full text-left bg-card border rounded-xl p-3 flex gap-3 active:opacity-80 transition-opacity ${
         hasActivity
-          ? "border-success"
-          : isKey
-          ? "border-accent"
+          ? "border-success/40"
           : isRest
           ? "border-border border-dashed opacity-45"
           : "border-border"
@@ -383,20 +391,10 @@ function SessionCard({ session: s, onOpen }: { session: SessionWithActivity; onO
           className={`w-8 h-8 rounded-full flex items-center justify-center ${
             hasActivity
               ? "bg-success/20 text-success"
-              : isKey
-              ? "bg-accent/20 text-accent"
-              : "bg-border/30 text-muted"
+              : `${typeStyle.bg} ${typeStyle.color}`
           }`}
         >
-          {hasActivity ? (
-            <Check size={16} />
-          ) : isKey ? (
-            <Zap size={16} />
-          ) : isRest ? (
-            <Moon size={16} />
-          ) : (
-            <MapPin size={16} />
-          )}
+          <Icon size={16} />
         </div>
       </div>
 
