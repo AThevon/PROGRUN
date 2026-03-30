@@ -4,6 +4,7 @@ import { getActivePlan, getPlanWeeksWithProgress } from "@/lib/db/queries/plans"
 import { getLastActivity } from "@/lib/db/queries/activities";
 import { getCumulativeStats } from "@/lib/db/queries/stats";
 import { calculatePace } from "@/lib/utils/pace";
+import { minDelay } from "@/lib/utils/delay";
 import { NextSessionHero } from "@/components/dashboard/next-session-hero";
 import { QuickStats } from "@/components/dashboard/quick-stats";
 import { LastRunCard } from "@/components/dashboard/last-run-card";
@@ -33,12 +34,14 @@ export default async function DashboardPage() {
   const session = await requireAuth();
   const userId = session.user!.id as string;
 
-  // Parallel data fetching
-  const [plan, lastActivity, cumulativeStats] = await Promise.all([
-    getActivePlan(userId),
-    getLastActivity(userId),
-    getCumulativeStats(userId),
-  ]);
+  // Parallel data fetching with 1s minimum for loading animation
+  const [plan, lastActivity, cumulativeStats] = await minDelay(
+    Promise.all([
+      getActivePlan(userId),
+      getLastActivity(userId),
+      getCumulativeStats(userId),
+    ]),
+  );
 
   const weeksWithProgress = plan
     ? await getPlanWeeksWithProgress(plan.id, userId)

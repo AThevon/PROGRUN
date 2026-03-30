@@ -2,12 +2,13 @@ import { requireAuth } from "@/lib/auth/session";
 import { getUserActivities } from "@/lib/db/queries/activities";
 import { ActivityListCard } from "@/components/activity/activity-list-card";
 import { FileUpload } from "@/components/activity/file-upload";
+import { minDelay } from "@/lib/utils/delay";
 
 export default async function ActivitiesPage() {
   const session = await requireAuth();
   const userId = session.user!.id as string;
 
-  const activities = await getUserActivities(userId);
+  const activities = await minDelay(getUserActivities(userId));
 
   return (
     <div className="p-5 flex flex-col gap-5">
