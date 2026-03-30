@@ -2,13 +2,24 @@ import { requireAuth } from "@/lib/auth/session";
 import { getUserActivities } from "@/lib/db/queries/activities";
 import { ActivityListCard } from "@/components/activity/activity-list-card";
 import { FileUpload } from "@/components/activity/file-upload";
+import { StravaSyncModal } from "@/components/dashboard/strava-sync-modal";
 import { minDelay } from "@/lib/utils/delay";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
 export default async function ActivitiesPage() {
   const session = await requireAuth();
   const userId = session.user!.id as string;
 
-  const activities = await minDelay(getUserActivities(userId));
+  const [activities, user] = await minDelay(
+    Promise.all([
+      getUserActivities(userId),
+      db.query.users.findFirst({ where: eq(users.id, userId) }),
+    ]),
+  );
+
+  const isStravaConnected = !!user?.garminAccessToken;
 
   return (
     <div className="p-5 flex flex-col gap-5">
@@ -20,6 +31,9 @@ export default async function ActivitiesPage() {
         <FileUpload />
       </div>
 
+      {/* Strava import */}
+      {isStravaConnected && <StravaSyncModal />}
+
       {/* List */}
       {activities.length === 0 ? (
         <div className="bg-surface border border-border rounded-2xl p-6 flex flex-col items-center gap-3 text-center mt-4">
@@ -27,7 +41,7 @@ export default async function ActivitiesPage() {
             Aucune activite
           </span>
           <p className="text-sm font-dm text-muted">
-            Importe un fichier .fit, .tcx ou .gpx pour commencer.
+            Importe un fichier ou synchronise depuis Strava.
           </p>
         </div>
       ) : (
