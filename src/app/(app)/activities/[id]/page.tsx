@@ -9,6 +9,7 @@ import { PaceChart } from "@/components/activity/pace-chart";
 import { LapsTable } from "@/components/activity/laps-table";
 import { DeleteButton } from "@/components/activity/delete-button";
 import { minDelay } from "@/lib/utils/delay";
+import { ActivityMapWrapper } from "@/components/activity/activity-map-wrapper";
 
 interface Lap {
   distanceKm: number;
@@ -127,14 +128,8 @@ export default async function ActivityDetailPage({
         <DeleteButton activityId={activity.id} redirectToList />
       </div>
 
-      {/* GPS map placeholder */}
-      {gpsTrack && gpsTrack.length > 1 ? (
-        <GpsPolyline track={gpsTrack} />
-      ) : (
-        <div className="bg-card border border-border rounded-xl h-[120px] flex items-center justify-center">
-          <span className="text-xs font-dm text-muted">Pas de trace GPS</span>
-        </div>
-      )}
+      {/* GPS map */}
+      <ActivityMapWrapper track={gpsTrack ?? []} />
 
       {/* Primary metrics */}
       <PrimaryMetrics activity={activity} />
