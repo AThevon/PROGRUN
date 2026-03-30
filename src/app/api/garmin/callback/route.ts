@@ -19,19 +19,40 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  if (!code) {
-    return NextResponse.redirect(new URL("/settings?error=no_code", getBaseUrl()));
+  const error = url.searchParams.get("error");
+
+  if (error || !code) {
+    return NextResponse.redirect(
+      new URL(`/settings?error=${error || "no_code"}`, getBaseUrl()),
+    );
   }
 
-  const callbackUrl = `${getBaseUrl()}/api/garmin/callback`;
-  const tokens = await exchangeStravaCode(code, callbackUrl);
+  try {
+    const callbackUrl = `${getBaseUrl()}/api/garmin/callback`;
+    const tokens = await exchangeStravaCode(code, callbackUrl);
 
-  await db.update(users).set({
-    garminAccessToken: tokens.access_token,
-    garminRefreshToken: tokens.refresh_token,
-    garminUserId: String(tokens.expires_at),
-    updatedAt: new Date(),
-  }).where(eq(users.id, session.user.id));
+    if (!tokens.access_token) {
+      console.error("Strava token exchange failed:", tokens);
+      return NextResponse.redirect(
+        new URL("/settings?error=token_exchange", getBaseUrl()),
+      );
+    }
 
-  return NextResponse.redirect(new URL("/settings", getBaseUrl()));
+    await db
+      .update(users)
+      .set({
+        garminAccessToken: tokens.access_token,
+        garminRefreshToken: tokens.refresh_token,
+        garminUserId: String(tokens.expires_at),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, session.user.id));
+
+    return NextResponse.redirect(new URL("/settings?strava=connected", getBaseUrl()));
+  } catch (err) {
+    console.error("Strava callback error:", err);
+    return NextResponse.redirect(
+      new URL("/settings?error=callback_failed", getBaseUrl()),
+    );
+  }
 }

@@ -7,6 +7,7 @@ import {
   LogOut,
   ChevronRight,
   Watch,
+  RefreshCw,
 } from "lucide-react";
 import { requireAuth } from "@/lib/auth/session";
 import { getUserPlans } from "@/lib/db/queries/plans";
@@ -14,6 +15,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { signOut } from "@/lib/auth";
+import { SyncButton } from "@/components/dashboard/sync-button";
 
 export default async function SettingsPage() {
   const session = await requireAuth();
@@ -63,29 +65,38 @@ export default async function SettingsPage() {
             Synchronise tes activites depuis Strava
           </p>
         </div>
-        <a
-          href="/api/garmin/connect"
-          className="flex items-center justify-between p-4 hover:bg-card transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            {isGarminConnected ? (
-              <Wifi size={18} strokeWidth={2} className="text-success" />
-            ) : (
-              <WifiOff size={18} strokeWidth={2} className="text-muted" />
-            )}
-            <div className="flex flex-col">
-              <span className="text-sm font-dm text-text">
-                {isGarminConnected ? "Strava connecte" : "Non connecte"}
+        {isGarminConnected ? (
+          <>
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <Wifi size={18} strokeWidth={2} className="text-success" />
+                <span className="text-sm font-dm text-text">
+                  Strava connecte
+                </span>
+              </div>
+              <span className="text-[10px] font-dm text-success bg-success/10 border border-success/20 rounded-full px-2 py-0.5">
+                Actif
               </span>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {!isGarminConnected && (
+            <div className="p-4">
+              <SyncButton />
+            </div>
+          </>
+        ) : (
+          <a
+            href="/api/garmin/connect"
+            className="flex items-center justify-between p-4 hover:bg-card transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <WifiOff size={18} strokeWidth={2} className="text-muted" />
+              <span className="text-sm font-dm text-text">Non connecte</span>
+            </div>
+            <div className="flex items-center gap-2">
               <span className="text-xs font-dm text-accent">Connecter</span>
-            )}
-            <ChevronRight size={16} strokeWidth={2} className="text-muted" />
-          </div>
-        </a>
+              <ChevronRight size={16} strokeWidth={2} className="text-muted" />
+            </div>
+          </a>
+        )}
       </div>
 
       {/* Plans section */}
