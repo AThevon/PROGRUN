@@ -12,6 +12,7 @@ export async function seedPlan(userId: string) {
       targetTime: "1:00:00",
       targetPace: "6:00",
       durationWeeks: 8,
+      startDate: new Date().toISOString().split("T")[0],
       isActive: true,
       zones: {
         z1: { name: "Recup", min: "8:00", max: "9:00" },

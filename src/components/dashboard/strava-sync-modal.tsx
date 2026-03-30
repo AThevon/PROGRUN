@@ -97,7 +97,7 @@ export function StravaSyncModal() {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex flex-col bg-bg/95 backdrop-blur"
+          className="fixed inset-0 z-[100] flex flex-col bg-bg/95 backdrop-blur"
           style={{ WebkitBackdropFilter: "blur(8px)" }}
         >
           {/* Header */}

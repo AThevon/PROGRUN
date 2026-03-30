@@ -53,7 +53,7 @@ export default async function PlanPage() {
   );
 
   const currentWeekNumber = activePlan.startDate
-    ? currentWeekNum(activePlan.startDate)
+    ? Math.min(currentWeekNum(activePlan.startDate), activePlan.durationWeeks ?? 8)
     : 1;
 
   const currentWeekData =
