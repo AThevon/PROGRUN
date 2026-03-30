@@ -62,6 +62,13 @@ function getCurrentWeek(startDate: string | null, maxWeeks: number): number {
 // Props
 // ---------------------------------------------------------------------------
 
+interface ZoneInfo {
+  name: string;
+  min: string;
+  max: string;
+  desc?: string;
+}
+
 interface PlanDetailProps {
   plan: Plan;
   weeks: WeekWithProgress[];
@@ -337,6 +344,7 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
           session={openSession}
           onClose={() => setOpenSession(null)}
           planTargetPace={plan.targetPace}
+          zones={(plan.zones as Record<string, ZoneInfo>) ?? {}}
         />
       )}
     </div>
@@ -486,10 +494,12 @@ function SessionDetailDrawer({
   session: s,
   onClose,
   planTargetPace,
+  zones,
 }: {
   session: SessionWithActivity;
   onClose: () => void;
   planTargetPace: string | null;
+  zones: Record<string, ZoneInfo>;
 }) {
   const router = useRouter();
   const hasActivity = !!s.activity;
@@ -558,17 +568,6 @@ function SessionDetailDrawer({
                 </div>
               </div>
             )}
-            {s.targetZone && (
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Target size={16} className="text-accent" />
-                </div>
-                <div>
-                  <span className="font-bebas text-xl leading-none text-text">{s.targetZone.toUpperCase()}</span>
-                  <span className="text-[10px] font-dm text-muted block">Zone</span>
-                </div>
-              </div>
-            )}
             {planTargetPace && (
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-lg bg-accent2/10 flex items-center justify-center">
@@ -582,6 +581,55 @@ function SessionDetailDrawer({
             )}
           </div>
         </div>
+
+        {/* Zone detail card */}
+        {s.targetZone && (() => {
+          // targetZone can be "z2", "z2-z3", etc.
+          const zoneKeys = s.targetZone.split("-").map(z => z.trim().toLowerCase());
+          const matchedZones = zoneKeys
+            .map(k => zones[k] ? { key: k, ...zones[k] } : null)
+            .filter(Boolean) as (ZoneInfo & { key: string })[];
+
+          if (matchedZones.length === 0) return null;
+
+          const ZONE_COLORS: Record<string, string> = {
+            z1: "#4fc3f7",
+            z2: "#81c784",
+            z3: "#e8ff47",
+            z4: "#ff6b35",
+          };
+
+          return (
+            <div className="bg-surface border border-border rounded-xl p-4">
+              <span className="text-[10px] font-dm text-muted uppercase tracking-wider mb-3 block">
+                {matchedZones.length > 1 ? "Zones d'allure" : "Zone d'allure"}
+              </span>
+              <div className="flex flex-col gap-2.5">
+                {matchedZones.map((z) => (
+                  <div key={z.key} className="flex items-center gap-3">
+                    <div
+                      className="w-1 h-10 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: ZONE_COLORS[z.key] ?? "#888890" }}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bebas text-lg leading-none text-text">
+                          {z.key.toUpperCase()} — {z.name}
+                        </span>
+                      </div>
+                      <span className="font-bebas text-base leading-none" style={{ color: ZONE_COLORS[z.key] ?? "#888890" }}>
+                        {z.min} - {z.max} /km
+                      </span>
+                      {z.desc && (
+                        <p className="text-xs font-dm text-muted mt-0.5">{z.desc}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Intervals detail */}
         {intervals && (intervals.reps || intervals.work) && (
