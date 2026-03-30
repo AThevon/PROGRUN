@@ -5,7 +5,6 @@ import { plans } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { PlanDetail } from "@/components/plan/plan-detail";
-import { minDelay } from "@/lib/utils/delay";
 
 export default async function PlanDetailPage({
   params,
@@ -16,9 +15,9 @@ export default async function PlanDetailPage({
   const userId = session.user!.id as string;
   const { id } = await params;
 
-  const plan = await minDelay(db.query.plans.findFirst({
+  const plan = await db.query.plans.findFirst({
     where: and(eq(plans.id, id), eq(plans.userId, userId)),
-  }));
+  });
   if (!plan) notFound();
 
   const weeksWithProgress = await getPlanWeeksWithProgress(id, userId);

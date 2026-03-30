@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { activities } from "@/lib/db/schema";
-import { eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 
 export interface WeeklyStats {
   totalDistanceKm: number;
@@ -24,19 +24,19 @@ export interface WeeklyVolume {
 
 export async function getWeeklyStats(
   userId: string,
-  weekStart: Date
+  weekStart: Date,
 ): Promise<WeeklyStats> {
   const result = await db
     .select({
-      totalDistanceKm: sql<number>`coalesce(sum(${activities.distanceKm}), 0)`,
-      totalDurationSeconds: sql<number>`coalesce(sum(${activities.durationSeconds}), 0)`,
+      totalDistanceKm:
+        sql<number>`coalesce(sum(${activities.distanceKm}), 0)`,
+      totalDurationSeconds:
+        sql<number>`coalesce(sum(${activities.durationSeconds}), 0)`,
       sessionCount: sql<number>`count(*)`,
       avgHeartRate: sql<number | null>`avg(${activities.avgHeartRate})`,
     })
     .from(activities)
-    .where(
-      sql`${activities.userId} = ${userId} and ${activities.date} >= ${weekStart}`
-    );
+    .where(and(eq(activities.userId, userId), gte(activities.date, weekStart)));
 
   const row = result[0];
   return {
@@ -47,11 +47,15 @@ export async function getWeeklyStats(
   };
 }
 
-export async function getCumulativeStats(userId: string): Promise<CumulativeStats> {
+export async function getCumulativeStats(
+  userId: string,
+): Promise<CumulativeStats> {
   const result = await db
     .select({
-      totalDistanceKm: sql<number>`coalesce(sum(${activities.distanceKm}), 0)`,
-      totalDurationSeconds: sql<number>`coalesce(sum(${activities.durationSeconds}), 0)`,
+      totalDistanceKm:
+        sql<number>`coalesce(sum(${activities.distanceKm}), 0)`,
+      totalDurationSeconds:
+        sql<number>`coalesce(sum(${activities.durationSeconds}), 0)`,
       sessionCount: sql<number>`count(*)`,
     })
     .from(activities)
@@ -65,11 +69,14 @@ export async function getCumulativeStats(userId: string): Promise<CumulativeStat
   };
 }
 
-export async function getWeeklyVolumes(userId: string): Promise<WeeklyVolume[]> {
+export async function getWeeklyVolumes(
+  userId: string,
+): Promise<WeeklyVolume[]> {
   const results = await db
     .select({
       weekStart: sql<Date>`date_trunc('week', ${activities.date})`,
-      totalDistanceKm: sql<number>`coalesce(sum(${activities.distanceKm}), 0)`,
+      totalDistanceKm:
+        sql<number>`coalesce(sum(${activities.distanceKm}), 0)`,
       avgPaceSeconds: sql<number>`coalesce(
         avg(${activities.durationSeconds}::float / nullif(${activities.distanceKm}, 0)),
         0

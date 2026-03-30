@@ -16,18 +16,15 @@ import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { signOut } from "@/lib/auth";
 import { StravaSyncModal } from "@/components/dashboard/strava-sync-modal";
-import { minDelay } from "@/lib/utils/delay";
 
 export default async function SettingsPage() {
   const session = await requireAuth();
   const userId = session.user!.id as string;
 
-  const [userRecord, userPlans] = await minDelay(
-    Promise.all([
-      db.query.users.findFirst({ where: eq(users.id, userId) }),
-      getUserPlans(userId),
-    ]),
-  );
+  const [userRecord, userPlans] = await Promise.all([
+    db.query.users.findFirst({ where: eq(users.id, userId) }),
+    getUserPlans(userId),
+  ]);
 
   const isStravaConnected = Boolean(userRecord?.stravaAccessToken);
   const userName = userRecord?.name ?? session.user?.name ?? "Runner";

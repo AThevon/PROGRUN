@@ -10,7 +10,6 @@ import { SummaryCards } from "@/components/stats/summary-cards";
 import { PaceEvolutionChart } from "@/components/stats/pace-evolution-chart";
 import { PlanAdherence } from "@/components/stats/plan-adherence";
 import { PersonalRecords } from "@/components/stats/personal-records";
-import { minDelay } from "@/lib/utils/delay";
 
 /** Number of full weeks elapsed since planStartDate (1-based). */
 function currentWeekNum(planStartDate: string): number {
@@ -26,14 +25,12 @@ export default async function StatsPage() {
   const session = await requireAuth();
   const userId = session.user!.id as string;
 
-  const [cumulativeStats, weeklyVolumes, plan, records] = await minDelay(
-    Promise.all([
-      getCumulativeStats(userId),
-      getWeeklyVolumes(userId),
-      getActivePlan(userId),
-      getUserRecords(userId),
-    ]),
-  );
+  const [cumulativeStats, weeklyVolumes, plan, records] = await Promise.all([
+    getCumulativeStats(userId),
+    getWeeklyVolumes(userId),
+    getActivePlan(userId),
+    getUserRecords(userId),
+  ]);
 
   const weeksWithProgress = plan
     ? await getPlanWeeksWithProgress(plan.id, userId)

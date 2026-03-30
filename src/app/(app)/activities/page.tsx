@@ -3,7 +3,6 @@ import { getUserActivities } from "@/lib/db/queries/activities";
 import { ActivityListCard } from "@/components/activity/activity-list-card";
 import { FileUpload } from "@/components/activity/file-upload";
 import { StravaSyncModal } from "@/components/dashboard/strava-sync-modal";
-import { minDelay } from "@/lib/utils/delay";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -12,14 +11,12 @@ export default async function ActivitiesPage() {
   const session = await requireAuth();
   const userId = session.user!.id as string;
 
-  const [activities, user] = await minDelay(
-    Promise.all([
-      getUserActivities(userId),
-      db.query.users.findFirst({ where: eq(users.id, userId) }),
-    ]),
-  );
+  const [activities, user] = await Promise.all([
+    getUserActivities(userId),
+    db.query.users.findFirst({ where: eq(users.id, userId) }),
+  ]);
 
-  const isStravaConnected = !!user?.garminAccessToken;
+  const isStravaConnected = !!user?.stravaAccessToken;
 
   return (
     <div className="p-5 flex flex-col gap-5">

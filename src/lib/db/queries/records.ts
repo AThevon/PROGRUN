@@ -1,13 +1,15 @@
 import { db } from "@/lib/db";
 import { personalRecords } from "@/lib/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import type { PersonalRecord } from "@/types";
 
 export interface RecordWithActivity extends PersonalRecord {
   activity: import("@/types").Activity;
 }
 
-export async function getUserRecords(userId: string): Promise<RecordWithActivity[]> {
+export async function getUserRecords(
+  userId: string,
+): Promise<RecordWithActivity[]> {
   const results = await db.query.personalRecords.findMany({
     where: eq(personalRecords.userId, userId),
     orderBy: [desc(personalRecords.achievedAt)],
@@ -24,27 +26,15 @@ export async function upsertRecord(
   type: string,
   value: string,
   activityId: string,
-  achievedAt: Date
+  achievedAt: Date,
 ): Promise<PersonalRecord> {
-  const existing = await db.query.personalRecords.findFirst({
-    where: and(
-      eq(personalRecords.userId, userId),
-      eq(personalRecords.type, type)
-    ),
-  });
-
-  if (existing) {
-    const updated = await db
-      .update(personalRecords)
-      .set({ value, activityId, achievedAt })
-      .where(eq(personalRecords.id, existing.id))
-      .returning();
-    return updated[0];
-  }
-
-  const inserted = await db
+  const [result] = await db
     .insert(personalRecords)
     .values({ userId, type, value, activityId, achievedAt })
+    .onConflictDoUpdate({
+      target: [personalRecords.userId, personalRecords.type],
+      set: { value, activityId, achievedAt },
+    })
     .returning();
-  return inserted[0];
+  return result;
 }

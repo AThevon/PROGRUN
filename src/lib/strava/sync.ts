@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { activities, users } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { refreshStravaToken } from "./oauth";
 import { calculatePace } from "@/lib/utils/pace";
 
@@ -22,12 +22,15 @@ async function getValidToken(userId: string): Promise<string | null> {
   // Token expired, refresh it
   try {
     const tokens = await refreshStravaToken(user.stravaRefreshToken);
-    await db.update(users).set({
-      stravaAccessToken: tokens.access_token,
-      stravaRefreshToken: tokens.refresh_token,
-      stravaTokenExpiresAt: String(tokens.expires_at),
-      updatedAt: new Date(),
-    }).where(eq(users.id, userId));
+    await db
+      .update(users)
+      .set({
+        stravaAccessToken: tokens.access_token,
+        stravaRefreshToken: tokens.refresh_token,
+        stravaTokenExpiresAt: String(tokens.expires_at),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
 
     return tokens.access_token;
   } catch (err) {
@@ -47,7 +50,7 @@ export async function syncStravaActivities(userId: string): Promise<number> {
 
   if (!res.ok) return 0;
 
-  const stravaActivities = await res.json() as Array<{
+  const stravaActivities = (await res.json()) as Array<{
     id: number;
     name: string;
     start_date: string;
@@ -65,42 +68,52 @@ export async function syncStravaActivities(userId: string): Promise<number> {
     map?: { summary_polyline?: string };
   }>;
 
-  let synced = 0;
+  // Filter run activities only
+  const runActivities = stravaActivities.filter((sa) => sa.type === "Run");
+  if (runActivities.length === 0) return 0;
 
-  for (const sa of stravaActivities) {
-    // Skip non-run activities
-    if (sa.type !== "Run") continue;
+  // Batch: fetch all existing activity IDs for this user in one query
+  const existingActivities = await db.query.activities.findMany({
+    where: eq(activities.userId, userId),
+    columns: { stravaActivityId: true },
+  });
+  const existingIds = new Set(
+    existingActivities.map((a) => a.stravaActivityId),
+  );
 
-    // Check if already imported
-    const existing = await db.query.activities.findFirst({
-      where: and(
-        eq(activities.userId, userId),
-        eq(activities.stravaActivityId, `strava_${sa.id}`),
-      ),
-    });
-    if (existing) continue;
+  // Filter out already imported activities in memory
+  const newActivities = runActivities.filter(
+    (sa) => !existingIds.has(`strava_${sa.id}`),
+  );
+  if (newActivities.length === 0) return 0;
 
+  // Batch insert all new activities in a single query
+  const valuesToInsert = newActivities.map((sa) => {
     const distanceKm = sa.distance / 1000;
     const avgPace = calculatePace(distanceKm, sa.moving_time);
-
-    await db.insert(activities).values({
+    return {
       userId,
       stravaActivityId: `strava_${sa.id}`,
-      source: "strava_sync",
+      source: "strava_sync" as const,
       name: sa.name,
       date: new Date(sa.start_date),
       distanceKm: Math.round(distanceKm * 100) / 100,
       durationSeconds: sa.moving_time,
       avgPace,
-      avgHeartRate: sa.average_heartrate ? Math.round(sa.average_heartrate) : null,
+      avgHeartRate: sa.average_heartrate
+        ? Math.round(sa.average_heartrate)
+        : null,
       maxHeartRate: sa.max_heartrate ? Math.round(sa.max_heartrate) : null,
-      avgCadence: sa.average_cadence ? Math.round(sa.average_cadence * 2) : null,
+      avgCadence: sa.average_cadence
+        ? Math.round(sa.average_cadence * 2)
+        : null,
       elevationGain: sa.total_elevation_gain || null,
       calories: sa.calories ? Math.round(sa.calories) : null,
-      matchStatus: "unmatched",
-    });
-    synced++;
-  }
+      matchStatus: "unmatched" as const,
+    };
+  });
 
-  return synced;
+  await db.insert(activities).values(valuesToInsert);
+
+  return newActivities.length;
 }

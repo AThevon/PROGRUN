@@ -8,7 +8,6 @@ import { SecondaryMetrics } from "@/components/activity/secondary-metrics";
 import { PaceChart } from "@/components/activity/pace-chart";
 import { LapsTable } from "@/components/activity/laps-table";
 import { DeleteButton } from "@/components/activity/delete-button";
-import { minDelay } from "@/lib/utils/delay";
 import { ActivityMapWrapper } from "@/components/activity/activity-map-wrapper";
 
 interface Lap {
@@ -98,7 +97,7 @@ export default async function ActivityDetailPage({
   const session = await requireAuth();
   const userId = session.user!.id as string;
 
-  const activity = await minDelay(getActivity(id, userId));
+  const activity = await getActivity(id, userId);
   if (!activity) notFound();
 
   const laps = (activity.laps as Lap[] | null) ?? null;

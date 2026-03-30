@@ -9,6 +9,7 @@ import {
   jsonb,
   date,
   primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -166,18 +167,27 @@ export const activities = pgTable("activities", {
 // ---------------------------------------------------------------------------
 // personalRecords
 // ---------------------------------------------------------------------------
-export const personalRecords = pgTable("personal_records", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  type: text("type").notNull(),
-  value: text("value").notNull(),
-  activityId: uuid("activity_id")
-    .notNull()
-    .references(() => activities.id, { onDelete: "cascade" }),
-  achievedAt: timestamp("achieved_at").notNull(),
-});
+export const personalRecords = pgTable(
+  "personal_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    value: text("value").notNull(),
+    activityId: uuid("activity_id")
+      .notNull()
+      .references(() => activities.id, { onDelete: "cascade" }),
+    achievedAt: timestamp("achieved_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("personal_records_user_id_type_idx").on(
+      table.userId,
+      table.type,
+    ),
+  ],
+);
 
 // ---------------------------------------------------------------------------
 // Relations
