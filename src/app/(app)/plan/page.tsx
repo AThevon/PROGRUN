@@ -19,6 +19,7 @@ function currentWeekNum(planStartDate: string, maxWeeks: number): number {
 }
 
 export default async function PlanPage() {
+  try {
   const session = await requireAuth();
   const userId = session.user!.id as string;
 
@@ -107,6 +108,17 @@ export default async function PlanPage() {
       )}
     </div>
   );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
+    return (
+      <div className="p-5">
+        <h1 className="font-bebas text-[32px] text-accent2">Erreur Plan</h1>
+        <pre className="text-xs text-accent2 mt-4 overflow-auto whitespace-pre-wrap break-all">{message}</pre>
+        <pre className="text-xs text-muted mt-2 overflow-auto whitespace-pre-wrap break-all">{stack}</pre>
+      </div>
+    );
+  }
 }
 
 /** Inline server-safe plan selector — no Date serialization issues */
