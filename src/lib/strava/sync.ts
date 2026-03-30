@@ -113,7 +113,7 @@ export async function syncStravaActivities(userId: string): Promise<number> {
     };
   });
 
-  await db.insert(activities).values(valuesToInsert);
+  await db.insert(activities).values(valuesToInsert).onConflictDoNothing();
 
   return newActivities.length;
 }

@@ -31,7 +31,7 @@ App Next.js de suivi d'entraînement running avec sync Strava/Garmin et import d
 - Les queries sont dans `src/lib/db/queries/` — utiliser les helpers Drizzle (`eq`, `and`, `gte`...) plutôt que `sql` raw
 
 ### OAuth / Strava / Garmin
-- Les tokens Garmin sont dans la table `users` ; les tokens Strava passent par la table `accounts` (NextAuth)
+- Les tokens Strava (access, refresh, expires_at) sont dans la table `users`
 - Toujours vérifier `res.ok` avant de parser les réponses des API externes
 - Le flux OAuth Strava utilise un paramètre `state` CSRF stocké en cookie
 
