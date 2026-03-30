@@ -1,61 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { cookies } from "next/headers";
-import { getAccessToken } from "@/lib/garmin/oauth";
+import { exchangeStravaCode } from "@/lib/strava/oauth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-export async function GET(req: NextRequest) {
+export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-  const userId = session.user.id;
-
-  const { searchParams } = new URL(req.url);
-  const oauthToken = searchParams.get("oauth_token");
-  const oauthVerifier = searchParams.get("oauth_verifier");
-
-  if (!oauthToken || !oauthVerifier) {
-    return NextResponse.redirect(
-      new URL("/settings?error=garmin_callback_missing_params", req.url)
-    );
+    return NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_APP_URL));
   }
 
-  const cookieStore = await cookies();
-  const oauthTokenSecret = cookieStore.get("garmin_oauth_secret")?.value;
-
-  if (!oauthTokenSecret) {
-    return NextResponse.redirect(
-      new URL("/settings?error=garmin_secret_missing", req.url)
-    );
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  if (!code) {
+    return NextResponse.redirect(new URL("/settings?error=no_code", process.env.NEXT_PUBLIC_APP_URL));
   }
 
-  try {
-    const { oauthToken: accessToken, oauthTokenSecret: accessSecret, garminUserId } =
-      await getAccessToken(oauthToken, oauthTokenSecret, oauthVerifier);
+  const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/garmin/callback`;
+  const tokens = await exchangeStravaCode(code, callbackUrl);
 
-    await db
-      .update(users)
-      .set({
-        garminAccessToken: accessToken,
-        garminRefreshToken: accessSecret,
-        garminUserId: garminUserId ?? null,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, userId));
+  // Store tokens in DB (reusing garmin columns)
+  await db.update(users).set({
+    garminAccessToken: tokens.access_token,
+    garminRefreshToken: tokens.refresh_token,
+    garminUserId: String(tokens.expires_at),
+    updatedAt: new Date(),
+  }).where(eq(users.id, session.user.id));
 
-    // Clear the temp cookie
-    cookieStore.delete("garmin_oauth_secret");
-
-    return NextResponse.redirect(
-      new URL("/settings?success=garmin_connected", req.url)
-    );
-  } catch (err) {
-    console.error("Garmin callback error:", err);
-    return NextResponse.redirect(
-      new URL("/settings?error=garmin_access_token_failed", req.url)
-    );
-  }
+  return NextResponse.redirect(new URL("/settings", process.env.NEXT_PUBLIC_APP_URL));
 }

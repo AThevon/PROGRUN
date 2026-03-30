@@ -34,7 +34,7 @@ export function GarminSyncStatus({ isConnected, lastSync }: GarminSyncStatusProp
       {/* Text */}
       <div className="flex-1 min-w-0">
         <span className="text-sm font-dm text-text">
-          Garmin {isConnected ? "connecte" : "deconnecte"}
+          Strava {isConnected ? "connecte" : "deconnecte"}
         </span>
         {lastSync && (
           <p className="text-xs font-dm text-muted">
@@ -49,7 +49,7 @@ export function GarminSyncStatus({ isConnected, lastSync }: GarminSyncStatusProp
       {/* Refresh button */}
       <button
         className="p-1.5 rounded-lg text-muted hover:text-text transition-colors active:opacity-60"
-        aria-label="Synchroniser Garmin"
+        aria-label="Synchroniser Strava"
       >
         <RefreshCw size={16} strokeWidth={2} />
       </button>

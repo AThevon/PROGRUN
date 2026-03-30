@@ -24,7 +24,7 @@ export default async function SettingsPage() {
     getUserPlans(userId),
   ]);
 
-  const isGarminConnected = Boolean(userRecord?.garminUserId);
+  const isGarminConnected = Boolean(userRecord?.garminAccessToken);
   const userName = userRecord?.name ?? session.user?.name ?? "Runner";
   const userEmail = userRecord?.email ?? session.user?.email ?? "";
 
@@ -50,17 +50,17 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      {/* Garmin section */}
+      {/* Strava section */}
       <div className="bg-surface border border-border rounded-2xl overflow-hidden">
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2 mb-1">
             <Watch size={16} strokeWidth={2} className="text-muted" />
             <span className="font-bebas text-base text-text tracking-wide">
-              Garmin Connect
+              Strava
             </span>
           </div>
           <p className="text-xs font-dm text-muted">
-            Synchronise tes activites depuis Garmin
+            Synchronise tes activites depuis Strava
           </p>
         </div>
         <a
@@ -75,13 +75,8 @@ export default async function SettingsPage() {
             )}
             <div className="flex flex-col">
               <span className="text-sm font-dm text-text">
-                {isGarminConnected ? "Connecte" : "Non connecte"}
+                {isGarminConnected ? "Strava connecte" : "Non connecte"}
               </span>
-              {isGarminConnected && (
-                <span className="text-[10px] font-dm text-muted">
-                  ID: {userRecord?.garminUserId}
-                </span>
-              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
