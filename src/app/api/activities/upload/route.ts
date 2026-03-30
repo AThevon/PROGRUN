@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { activities } from "@/lib/db/schema";
 import { parseFitFile, parseTcxFile, parseGpxFile } from "@/lib/garmin/parser";
+import { autoMatchActivity } from "@/lib/utils/matching";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -68,6 +69,9 @@ export async function POST(req: NextRequest) {
       matchStatus: "unmatched",
     })
     .returning();
+
+  // Attempt auto-matching to an active plan session
+  await autoMatchActivity(inserted.id, userId, inserted.date, inserted.distanceKm);
 
   return NextResponse.json(inserted, { status: 201 });
 }
