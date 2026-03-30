@@ -22,7 +22,8 @@ import {
   CalendarDays,
 } from "lucide-react";
 import type { Plan, WeekWithProgress } from "@/types";
-import { paceToSeconds } from "@/lib/utils/pace";
+import { paceToSeconds, formatDuration } from "@/lib/utils/pace";
+import { PHASE_COLORS } from "@/lib/utils/zones";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -36,14 +37,6 @@ const PHASE_NAMES: Record<string, string> = {
   performance: "Performance",
   taper: "Affutage",
   race: "Race Week",
-};
-
-const PHASE_COLORS: Record<string, string> = {
-  build: "#81c784",
-  recovery: "#4fc3f7",
-  performance: "#ff6b35",
-  taper: "#4fc3f7",
-  race: "#e8ff47",
 };
 
 // ---------------------------------------------------------------------------
@@ -732,7 +725,7 @@ function SessionDetailDrawer({
               </div>
               <div className="bg-surface border border-border rounded-xl p-3 text-center">
                 <Timer size={14} className="text-muted mx-auto mb-1" />
-                <span className="font-bebas text-2xl leading-none text-text block">{formatSeconds(s.activity.durationSeconds)}</span>
+                <span className="font-bebas text-2xl leading-none text-text block">{formatDuration(s.activity.durationSeconds)}</span>
                 <span className="text-[9px] font-dm text-muted uppercase">temps</span>
               </div>
             </div>
@@ -841,10 +834,3 @@ function SessionDetailDrawer({
   );
 }
 
-function formatSeconds(sec: number): string {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}

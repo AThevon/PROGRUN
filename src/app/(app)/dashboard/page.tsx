@@ -4,6 +4,7 @@ import { getActivePlan, getPlanWeeksWithProgress } from "@/lib/db/queries/plans"
 import { getLastActivity } from "@/lib/db/queries/activities";
 import { getCumulativeStats } from "@/lib/db/queries/stats";
 import { calculatePace } from "@/lib/utils/pace";
+import { currentWeekNum } from "@/lib/utils/date";
 import { NextSessionHero } from "@/components/dashboard/next-session-hero";
 import { QuickStats } from "@/components/dashboard/quick-stats";
 import { LastRunCard } from "@/components/dashboard/last-run-card";
@@ -17,16 +18,6 @@ function getISOWeekMonday(date: Date): Date {
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
   return d;
-}
-
-/** Number of full weeks elapsed since planStartDate (1-based). */
-function currentWeekNum(planStartDate: string): number {
-  const start = new Date(planStartDate);
-  start.setHours(0, 0, 0, 0);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const diffDays = Math.floor((now.getTime() - start.getTime()) / 86_400_000);
-  return Math.max(1, Math.floor(diffDays / 7) + 1);
 }
 
 export default async function DashboardPage() {

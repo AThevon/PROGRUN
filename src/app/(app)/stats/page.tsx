@@ -6,20 +6,11 @@ import { db } from "@/lib/db";
 import { activities } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { paceToSeconds } from "@/lib/utils/pace";
+import { currentWeekNum } from "@/lib/utils/date";
 import { SummaryCards } from "@/components/stats/summary-cards";
 import { PaceEvolutionChart } from "@/components/stats/pace-evolution-chart";
 import { PlanAdherence } from "@/components/stats/plan-adherence";
 import { PersonalRecords } from "@/components/stats/personal-records";
-
-/** Number of full weeks elapsed since planStartDate (1-based). */
-function currentWeekNum(planStartDate: string): number {
-  const start = new Date(planStartDate);
-  start.setHours(0, 0, 0, 0);
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const diffDays = Math.floor((now.getTime() - start.getTime()) / 86_400_000);
-  return Math.max(1, Math.floor(diffDays / 7) + 1);
-}
 
 export default async function StatsPage() {
   const session = await requireAuth();

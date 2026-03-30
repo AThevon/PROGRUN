@@ -1,5 +1,3 @@
-import { RefreshCw } from "lucide-react";
-
 interface StravaSyncStatusProps {
   isConnected: boolean;
   lastSync?: Date | null;
@@ -46,13 +44,6 @@ export function StravaSyncStatus({ isConnected, lastSync }: StravaSyncStatusProp
         )}
       </div>
 
-      {/* Refresh button */}
-      <button
-        className="p-1.5 rounded-lg text-muted hover:text-text transition-colors active:opacity-60"
-        aria-label="Synchroniser Strava"
-      >
-        <RefreshCw size={16} strokeWidth={2} />
-      </button>
     </div>
   );
 }
