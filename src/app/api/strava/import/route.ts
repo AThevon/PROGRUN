@@ -63,6 +63,64 @@ export async function POST(request: Request) {
     const distanceKm = sa.distance / 1000;
     const avgPace = calculatePace(distanceKm, sa.moving_time);
 
+    // Fetch GPS streams (latlng + heartrate + cadence)
+    let gpsTrack: Array<[number, number]> | null = null;
+    try {
+      const streamsRes = await fetch(
+        `https://www.strava.com/api/v3/activities/${id}/streams?keys=latlng,heartrate,cadence,altitude&key_type=time`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (streamsRes.ok) {
+        const streams = (await streamsRes.json()) as Array<{
+          type: string;
+          data: number[] | Array<[number, number]>;
+        }>;
+        const latlngStream = streams.find((s) => s.type === "latlng");
+        if (latlngStream?.data?.length) {
+          gpsTrack = latlngStream.data as Array<[number, number]>;
+        }
+      }
+    } catch {
+      // GPS is optional — continue without it
+    }
+
+    // Build laps from Strava laps endpoint
+    let laps: Array<{
+      distanceKm: number;
+      durationSeconds: number;
+      avgPace: string;
+      avgHeartRate: number | null;
+      avgCadence: number | null;
+    }> | null = null;
+    try {
+      const lapsRes = await fetch(
+        `https://www.strava.com/api/v3/activities/${id}/laps`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (lapsRes.ok) {
+        const stravaLaps = (await lapsRes.json()) as Array<{
+          distance: number;
+          moving_time: number;
+          average_heartrate?: number;
+          average_cadence?: number;
+        }>;
+        if (stravaLaps.length > 0) {
+          laps = stravaLaps.map((l) => {
+            const lapDist = l.distance / 1000;
+            return {
+              distanceKm: Math.round(lapDist * 100) / 100,
+              durationSeconds: l.moving_time,
+              avgPace: calculatePace(lapDist, l.moving_time),
+              avgHeartRate: l.average_heartrate ? Math.round(l.average_heartrate) : null,
+              avgCadence: l.average_cadence ? Math.round(l.average_cadence * 2) : null,
+            };
+          });
+        }
+      }
+    } catch {
+      // Laps are optional
+    }
+
     const [activity] = await db
       .insert(activities)
       .values({
@@ -83,6 +141,8 @@ export async function POST(request: Request) {
           : null,
         elevationGain: sa.total_elevation_gain || null,
         calories: sa.calories ? Math.round(sa.calories) : null,
+        gpsTrack,
+        laps,
         matchStatus: "unmatched",
       })
       .returning();
