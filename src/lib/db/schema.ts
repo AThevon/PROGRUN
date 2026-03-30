@@ -21,9 +21,9 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified", { mode: "date" }),
   name: text("name"),
   image: text("image"),
-  garminAccessToken: text("garmin_access_token"),
-  garminRefreshToken: text("garmin_refresh_token"),
-  garminUserId: text("garmin_user_id"),
+  stravaAccessToken: text("strava_access_token"),
+  stravaRefreshToken: text("strava_refresh_token"),
+  stravaTokenExpiresAt: text("strava_token_expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -138,7 +138,7 @@ export const activities = pgTable("activities", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  garminActivityId: text("garmin_activity_id").unique(),
+  stravaActivityId: text("strava_activity_id").unique(),
   source: text("source"),
   name: text("name"),
   date: timestamp("date").notNull(),

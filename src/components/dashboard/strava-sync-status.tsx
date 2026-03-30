@@ -1,6 +1,6 @@
 import { RefreshCw } from "lucide-react";
 
-interface GarminSyncStatusProps {
+interface StravaSyncStatusProps {
   isConnected: boolean;
   lastSync?: Date | null;
 }
@@ -16,7 +16,7 @@ function timeAgo(date: Date): string {
   return `Il y a ${diffD}j`;
 }
 
-export function GarminSyncStatus({ isConnected, lastSync }: GarminSyncStatusProps) {
+export function StravaSyncStatus({ isConnected, lastSync }: StravaSyncStatusProps) {
   return (
     <div className="bg-surface border border-border rounded-xl px-4 py-3 flex items-center gap-3">
       {/* Status dot */}

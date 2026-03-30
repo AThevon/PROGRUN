@@ -7,18 +7,18 @@ import { refreshStravaToken } from "@/lib/strava/oauth";
 
 async function getValidToken(userId: string) {
   const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
-  if (!user?.garminAccessToken || !user?.garminRefreshToken) return null;
+  if (!user?.stravaAccessToken || !user?.stravaRefreshToken) return null;
 
-  const expiresAt = parseInt(user.garminUserId || "0");
-  if (Date.now() / 1000 < expiresAt - 60) return user.garminAccessToken;
+  const expiresAt = parseInt(user.stravaTokenExpiresAt || "0");
+  if (Date.now() / 1000 < expiresAt - 60) return user.stravaAccessToken;
 
-  const tokens = await refreshStravaToken(user.garminRefreshToken);
+  const tokens = await refreshStravaToken(user.stravaRefreshToken);
   await db
     .update(users)
     .set({
-      garminAccessToken: tokens.access_token,
-      garminRefreshToken: tokens.refresh_token,
-      garminUserId: String(tokens.expires_at),
+      stravaAccessToken: tokens.access_token,
+      stravaRefreshToken: tokens.refresh_token,
+      stravaTokenExpiresAt: String(tokens.expires_at),
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId));
@@ -52,7 +52,7 @@ export async function GET() {
         const existing = await db.query.activities.findFirst({
           where: and(
             eq(activities.userId, userId),
-            eq(activities.garminActivityId, `strava_${a.id}`)
+            eq(activities.stravaActivityId, `strava_${a.id}`)
           ),
         });
         return { ...a, alreadyImported: !!existing };

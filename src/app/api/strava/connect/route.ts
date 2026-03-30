@@ -14,6 +14,6 @@ export async function GET() {
     return NextResponse.redirect(new URL("/login", getBaseUrl()));
   }
 
-  const callbackUrl = `${getBaseUrl()}/api/garmin/callback`;
+  const callbackUrl = `${getBaseUrl()}/api/strava/callback`;
   return NextResponse.redirect(getStravaAuthorizeUrl(callbackUrl));
 }

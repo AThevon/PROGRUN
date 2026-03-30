@@ -10,18 +10,18 @@ import { refreshPersonalRecords } from "@/lib/utils/records";
 
 async function getValidToken(userId: string) {
   const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
-  if (!user?.garminAccessToken || !user?.garminRefreshToken) return null;
+  if (!user?.stravaAccessToken || !user?.stravaRefreshToken) return null;
 
-  const expiresAt = parseInt(user.garminUserId || "0");
-  if (Date.now() / 1000 < expiresAt - 60) return user.garminAccessToken;
+  const expiresAt = parseInt(user.stravaTokenExpiresAt || "0");
+  if (Date.now() / 1000 < expiresAt - 60) return user.stravaAccessToken;
 
-  const tokens = await refreshStravaToken(user.garminRefreshToken);
+  const tokens = await refreshStravaToken(user.stravaRefreshToken);
   await db
     .update(users)
     .set({
-      garminAccessToken: tokens.access_token,
-      garminRefreshToken: tokens.refresh_token,
-      garminUserId: String(tokens.expires_at),
+      stravaAccessToken: tokens.access_token,
+      stravaRefreshToken: tokens.refresh_token,
+      stravaTokenExpiresAt: String(tokens.expires_at),
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId));
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     const existing = await db.query.activities.findFirst({
       where: and(
         eq(activities.userId, userId),
-        eq(activities.garminActivityId, `strava_${id}`)
+        eq(activities.stravaActivityId, `strava_${id}`)
       ),
     });
     if (existing) continue;
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
       .insert(activities)
       .values({
         userId,
-        garminActivityId: `strava_${sa.id}`,
+        stravaActivityId: `strava_${sa.id}`,
         source: "strava_sync",
         name: sa.name,
         date: new Date(sa.start_date),

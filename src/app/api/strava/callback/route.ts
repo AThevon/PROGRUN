@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const callbackUrl = `${getBaseUrl()}/api/garmin/callback`;
+    const callbackUrl = `${getBaseUrl()}/api/strava/callback`;
     const tokens = await exchangeStravaCode(code, callbackUrl);
 
     if (!tokens.access_token) {
@@ -41,9 +41,9 @@ export async function GET(request: Request) {
     await db
       .update(users)
       .set({
-        garminAccessToken: tokens.access_token,
-        garminRefreshToken: tokens.refresh_token,
-        garminUserId: String(tokens.expires_at),
+        stravaAccessToken: tokens.access_token,
+        stravaRefreshToken: tokens.refresh_token,
+        stravaTokenExpiresAt: String(tokens.expires_at),
         updatedAt: new Date(),
       })
       .where(eq(users.id, session.user.id));

@@ -12,7 +12,7 @@ export function SyncButton() {
   async function handleSync() {
     setState("syncing");
     try {
-      const res = await fetch("/api/garmin/sync", { method: "POST" });
+      const res = await fetch("/api/strava/sync", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Sync failed");
       setSynced(data.synced);

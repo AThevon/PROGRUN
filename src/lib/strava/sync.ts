@@ -11,23 +11,20 @@ async function getValidToken(userId: string): Promise<string | null> {
     where: eq(users.id, userId),
   });
 
-  if (!user?.garminAccessToken || !user?.garminRefreshToken) return null;
+  if (!user?.stravaAccessToken || !user?.stravaRefreshToken) return null;
 
-  // garminAccessToken stores strava access token
-  // garminRefreshToken stores strava refresh token
-  // garminUserId stores expires_at timestamp
-  const expiresAt = parseInt(user.garminUserId || "0");
+  const expiresAt = parseInt(user.stravaTokenExpiresAt || "0");
 
   if (Date.now() / 1000 < expiresAt - 60) {
-    return user.garminAccessToken;
+    return user.stravaAccessToken;
   }
 
   // Token expired, refresh it
-  const tokens = await refreshStravaToken(user.garminRefreshToken);
+  const tokens = await refreshStravaToken(user.stravaRefreshToken);
   await db.update(users).set({
-    garminAccessToken: tokens.access_token,
-    garminRefreshToken: tokens.refresh_token,
-    garminUserId: String(tokens.expires_at),
+    stravaAccessToken: tokens.access_token,
+    stravaRefreshToken: tokens.refresh_token,
+    stravaTokenExpiresAt: String(tokens.expires_at),
     updatedAt: new Date(),
   }).where(eq(users.id, userId));
 
@@ -73,7 +70,7 @@ export async function syncStravaActivities(userId: string): Promise<number> {
     const existing = await db.query.activities.findFirst({
       where: and(
         eq(activities.userId, userId),
-        eq(activities.garminActivityId, `strava_${sa.id}`),
+        eq(activities.stravaActivityId, `strava_${sa.id}`),
       ),
     });
     if (existing) continue;
@@ -83,7 +80,7 @@ export async function syncStravaActivities(userId: string): Promise<number> {
 
     await db.insert(activities).values({
       userId,
-      garminActivityId: `strava_${sa.id}`,
+      stravaActivityId: `strava_${sa.id}`,
       source: "strava_sync",
       name: sa.name,
       date: new Date(sa.start_date),

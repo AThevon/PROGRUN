@@ -29,7 +29,7 @@ export default async function SettingsPage() {
     ]),
   );
 
-  const isGarminConnected = Boolean(userRecord?.garminAccessToken);
+  const isStravaConnected = Boolean(userRecord?.stravaAccessToken);
   const userName = userRecord?.name ?? session.user?.name ?? "Runner";
   const userEmail = userRecord?.email ?? session.user?.email ?? "";
 
@@ -68,7 +68,7 @@ export default async function SettingsPage() {
             Synchronise tes activites depuis Strava
           </p>
         </div>
-        {isGarminConnected ? (
+        {isStravaConnected ? (
           <>
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex items-center gap-3">
@@ -87,7 +87,7 @@ export default async function SettingsPage() {
           </>
         ) : (
           <a
-            href="/api/garmin/connect"
+            href="/api/strava/connect"
             className="flex items-center justify-between p-4 hover:bg-card transition-colors"
           >
             <div className="flex items-center gap-3">
