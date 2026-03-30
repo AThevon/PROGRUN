@@ -19,6 +19,7 @@ import {
   TrendingUp,
   Footprints,
   ExternalLink,
+  CalendarDays,
 } from "lucide-react";
 import type { Plan, WeekWithProgress } from "@/types";
 
@@ -78,8 +79,9 @@ interface PlanDetailProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function PlanDetail({ plan, weeks }: PlanDetailProps) {
+export function PlanDetail({ plan, weeks: initialWeeks }: PlanDetailProps) {
   const router = useRouter();
+  const [weeks, setWeeks] = useState(initialWeeks);
 
   const durationWeeks = plan.durationWeeks ?? weeks.length;
   const currentWeek = getCurrentWeek(plan.startDate ?? null, durationWeeks);
@@ -343,6 +345,16 @@ export function PlanDetail({ plan, weeks }: PlanDetailProps) {
           onClose={() => setOpenSession(null)}
           planTargetPace={plan.targetPace}
           zones={(plan.zones as Record<string, ZoneInfo>) ?? {}}
+          onDayChanged={(sessionId, newDay) => {
+            setWeeks((prev) =>
+              prev.map((w) => ({
+                ...w,
+                sessions: w.sessions.map((s) =>
+                  s.id === sessionId ? { ...s, dayOfWeek: newDay } : s,
+                ),
+              })),
+            );
+          }}
         />
       )}
     </div>
@@ -493,17 +505,39 @@ function SessionDetailDrawer({
   onClose,
   planTargetPace,
   zones,
+  onDayChanged,
 }: {
   session: SessionWithActivity;
   onClose: () => void;
   planTargetPace: string | null;
   zones: Record<string, ZoneInfo>;
+  onDayChanged: (sessionId: string, newDay: number) => void;
 }) {
   const router = useRouter();
+  const [currentDay, setCurrentDay] = useState(s.dayOfWeek ?? 0);
+  const [saving, setSaving] = useState(false);
   const hasActivity = !!s.activity;
   const isKey = s.isKeySession ?? false;
-  const dayName = s.dayOfWeek != null ? (DAY_NAMES[s.dayOfWeek] ?? "?") : "?";
+  const dayName = DAY_NAMES[currentDay] ?? "?";
   const intervals = s.intervals as { reps?: number; work?: string; rest?: string } | null;
+
+  async function changeDay(newDay: number) {
+    if (newDay === currentDay) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/sessions/${s.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dayOfWeek: newDay }),
+      });
+      if (res.ok) {
+        setCurrentDay(newDay);
+        onDayChanged(s.id, newDay);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div
@@ -531,6 +565,31 @@ function SessionDetailDrawer({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+
+        {/* Day picker */}
+        <div className="bg-surface border border-border rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <CalendarDays size={14} className="text-muted" />
+            <span className="text-[10px] font-dm text-muted uppercase tracking-wider">Jour de la seance</span>
+            {saving && <span className="text-[10px] font-dm text-accent animate-pulse ml-auto">Sauvegarde...</span>}
+          </div>
+          <div className="flex gap-1.5">
+            {DAY_NAMES.map((name, i) => (
+              <button
+                key={i}
+                onClick={() => changeDay(i)}
+                disabled={saving}
+                className={`flex-1 py-2 rounded-lg text-xs font-dm font-semibold transition-colors ${
+                  i === currentDay
+                    ? "bg-accent text-bg"
+                    : "bg-card border border-border text-muted active:bg-border"
+                }`}
+              >
+                {name.slice(0, 3)}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Description */}
         {s.description && (
