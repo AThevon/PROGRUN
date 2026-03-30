@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RunTrack
+
+Running training tracker with Strava/Garmin sync, FIT/TCX/GPX file import, training plans, and detailed stats. Built as a PWA for mobile-first usage.
+
+<!-- ![RunTrack Screenshot](screenshot.png) -->
+
+## Features
+
+- **Strava & Garmin sync** — OAuth-based activity sync
+- **File import** — FIT, TCX, GPX support via drag & drop
+- **Training plans** — create and follow structured plans
+- **Stats & charts** — weekly/monthly breakdowns with Recharts
+- **GPS maps** — activity route visualization with Leaflet
+- **PWA** — installable, works offline via Service Worker
+
+## Tech Stack
+
+| Layer | Tech |
+|-------|------|
+| Framework | Next.js 16 (App Router) + React 19 |
+| Language | TypeScript |
+| Database | PostgreSQL (Neon) + Drizzle ORM |
+| Auth | NextAuth.js v5 (Google, GitHub) |
+| Styling | Tailwind CSS v4 |
+| Charts | Recharts |
+| Maps | Leaflet / react-leaflet |
+| PWA | Serwist |
+| Validation | Zod |
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20+
+- PostgreSQL database ([Neon](https://neon.tech) recommended)
+- Strava API app (for sync)
+
+### Setup
+
+```bash
+git clone https://github.com/<your-username>/PROGRUN.git
+cd PROGRUN
+npm install
+```
+
+Create a `.env.local` file:
+
+```env
+DATABASE_URL=postgresql://...
+AUTH_SECRET=...
+AUTH_GOOGLE_ID=...
+AUTH_GOOGLE_SECRET=...
+AUTH_GITHUB_ID=...
+AUTH_GITHUB_SECRET=...
+STRAVA_CLIENT_ID=...
+STRAVA_CLIENT_SECRET=...
+```
+
+Push the database schema:
+
+```bash
+npx drizzle-kit push
+```
+
+Start the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npx tsc --noEmit` | Type-check |
+| `npx drizzle-kit push` | Apply DB schema |
+| `npx drizzle-kit generate` | Generate migration |
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/
+│   ├── (app)/          # Authenticated pages
+│   ├── (auth)/         # Login pages
+│   └── api/            # API routes
+├── components/
+│   ├── activity/       # Activity-related components
+│   ├── dashboard/      # Dashboard widgets
+│   ├── plan/           # Training plan components
+│   ├── stats/          # Stats & charts
+│   └── ui/             # Shared UI primitives
+├── lib/
+│   ├── db/
+│   │   ├── schema.ts   # Drizzle schema
+│   │   └── queries/    # DB query helpers
+│   ├── strava/         # Strava OAuth & sync
+│   ├── garmin/         # Garmin integration
+│   └── ...             # Auth, utils
+└── types/
+```
