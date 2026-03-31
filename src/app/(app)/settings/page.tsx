@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Watch,
   RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import { requireAuth } from "@/lib/auth/session";
 import { getUserPlans } from "@/lib/db/queries/plans";
@@ -17,6 +18,7 @@ import { eq } from "drizzle-orm";
 import { signOut } from "@/lib/auth";
 import { StravaSyncModal } from "@/components/dashboard/strava-sync-modal";
 import { minDelay } from "@/lib/utils/delay";
+import { DeleteAccountButton } from "@/components/settings/delete-account-button";
 
 export default async function SettingsPage() {
   const session = await requireAuth();
@@ -182,6 +184,19 @@ export default async function SettingsPage() {
             <ChevronRight size={16} strokeWidth={2} className="text-muted" />
           </button>
         </form>
+      </div>
+
+      {/* Danger zone */}
+      <div className="bg-surface border border-accent2/20 rounded-2xl overflow-hidden">
+        <div className="p-4 border-b border-accent2/20">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} strokeWidth={2} className="text-accent2" />
+            <span className="font-bebas text-base text-accent2 tracking-wide">
+              Zone danger
+            </span>
+          </div>
+        </div>
+        <DeleteAccountButton />
       </div>
     </div>
   );
